@@ -16,15 +16,15 @@ With a simple rule and much competitiveness, gobang is easy to play but not easy
 
 #### Feartures
 
-- **Game Initialization**: Users could create games with an empty 15 * 15 board. They could also specify the difficulty level (local battle mode), time limit to decide the placement, and wether allowed to withdraw. If it's an online game, the side (Black/While) for each player is assigned randomly. The black one always place the first piece.
+- **Game Initialization**: Users could create games with an empty 15 * 15 board. They could also specify the difficulty level (local battle mode), time limit to decide the placement, and whether players are allowed to withdraw. If it's an online game, the side (Black/While) for each player is assigned randomly. The black side always place the first piece.
 
-- **Displaying Board**: Players are able to see the current chess board anytime they want to. This displaying features will show all placed pieces and also all empty spots. 
+- **Displaying Board**: Players are able to see the current chess board at anytime. This displaying features will show all placed pieces and also all empty spots. 
 
-- **Action**: In each players’ turn, players can put a piece at any empty spot.
+- **Action**: In each players’ turn, players can put a piece at any empty spot. A move must be made within the time limits, otherwise the piece will be placed at a randomly selected spot. If the time limit for the whole game is used up, players will get 5 seconds for every move.
 
 - **Withdraw**: Players can withdraw their last move before the opponents taking action. This is only allowed when “allow_withdraw” is turned on as mentioned above.
 
-- **Time Limit**: Users can set time limits for a singal move and the whole game. In the local mode against AI, this restriction will only apply to the human player. If it's a PVP battle, the `White` player will set this for the current game. 
+- **Time Limit**: Users can set time limits for a single move and the whole game. In the local mode against AI, this restriction will only apply to the human player. If it's a PVP battle, the `White` player will set this for the current game. 
 
 - **Difficulty Level**:  Users could choose different AI difficulty levels, on which the search depth of a Game Tree is based. This feature is only available in local battles. And the time it takes for a search is not restricted by the `time_limit` setting. So, play easy on yourself.
 
