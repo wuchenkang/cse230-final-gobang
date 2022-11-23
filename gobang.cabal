@@ -36,6 +36,7 @@ library
       base >=4.7 && <5
     , brick
     , lens
+    , microlens
     , microlens-mtl
     , microlens-platform
     , microlens-th
@@ -58,6 +59,7 @@ executable gobang-exe
     , brick
     , gobang
     , lens
+    , microlens
     , microlens-mtl
     , microlens-platform
     , microlens-th

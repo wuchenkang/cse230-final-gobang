@@ -28,6 +28,7 @@ dependencies:
 - microlens-platform
 - microlens-th
 - microlens-mtl
+- microlens
 - mtl
 - vector
 - split

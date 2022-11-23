@@ -5,8 +5,11 @@ import qualified Brick.Main as M
 
 initialBoard :: [Int]
 initialBoard = replicate (9 * 9) 0
+-- initialBoard = take (9 * 9) [0..]
 
 main :: IO ()
 main = do
     let game = mkGame initialBoard 0
-    M.simpleMain (drawUI game)
+    gameOver <- M.defaultMain app game
+    return ()
+    -- M.simpleMain (drawUI game)
