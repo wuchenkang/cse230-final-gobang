@@ -130,6 +130,7 @@ handleGameEvent (VtyEvent (V.EvKey k [])) = do
     _ -> return ()
 handleGameEvent _ = return ()
 
+-- TODO: Time out to AI / PVP
 handleEvent :: BrickEvent () GobangEvent -> EventM () Game ()
 handleEvent (AppEvent (Placement (x, y))) = return ()
 handleEvent (AppEvent Countdown) = do
