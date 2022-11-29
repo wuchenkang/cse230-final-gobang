@@ -126,6 +126,8 @@ handleGameEvent (VtyEvent (V.EvKey k [])) = do
       game <- get
       liftIO $ turnOffTimer game
       modify $ placePiece . (timerUpdate $ timeLimit game)
+      modify $ detectState
+      modify $ changePlayer
     V.KChar 'q' -> M.halt
     _ -> return ()
 handleGameEvent _ = return ()
@@ -142,6 +144,7 @@ handleEvent (AppEvent Countdown) = do
         then modify $ timerUpdate $ (tictoc game) - 1
         else M.halt -- Timeout
     -- conume dead countdown if any
+    -- endgame
     _ -> return ()
 handleEvent e = handleGameEvent e
 
