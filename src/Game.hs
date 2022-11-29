@@ -95,3 +95,19 @@ tictocThread status chan = do
       writeBChan chan Countdown
     _ -> do
       threadDelay 1000000
+
+isOccupied :: Game -> Int -> Int -> Bool
+isOccupied game r c = helper $ board game !! r !! c
+  where 
+    helper Empty = False
+    helper _     = True
+
+
+randomPlace :: Game -> Game
+randomPlace game = game { board = board game & ix y . ix x .~ p }
+  where
+    (y, x) = head candidates
+    candidates = [(row, col) | row <- [0 .. 8], 
+                               col <- [0 .. 8],
+                               not $ isOccupied game row col]
+    p = Occ $ player game

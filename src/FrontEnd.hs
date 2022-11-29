@@ -18,13 +18,14 @@ import Control.Concurrent.STM
 import Control.Monad.Trans (liftIO)
 
 
-stylePlayer1, stylePlayer2, styleHigh, styleMid, styleLow, styleFocus :: AttrName
+stylePlayer1, stylePlayer2, styleHigh, styleMid, styleLow, styleFocus, styleChessBoard :: AttrName
 stylePlayer1 = attrName "stylePlayer1"
 stylePlayer2 = attrName "stylePlayer2"
 styleHigh    = attrName "styleHigh"
 styleMid     = attrName "styleMid"
 styleLow     = attrName "styleLow"
 styleFocus   = attrName "styleFocus"
+styleChessBoard = attrName "styleChessBoard"
 
 attributes :: AttrMap
 attributes = attrMap V.defAttr 
@@ -34,6 +35,7 @@ attributes = attrMap V.defAttr
   , (styleMid,     fg V.yellow)
   , (styleLow,     fg V.red)
   , (styleFocus,   bg V.cyan) 
+  , (styleChessBoard, bg $ V.rgbColor 243 200 133)
   ]
 
 focusPosition :: Game -> [[Widget ()]] -> [[Widget ()]]
@@ -45,9 +47,10 @@ focusPosition game wboard =
 
 drawCell :: Cell -> Widget ()
 drawCell c = center $ case c of
-  Occ 1 -> withAttr stylePlayer1 $ str "⬤" 
-  Occ 2 -> withAttr stylePlayer2 $ str "⬤" 
+  Occ 0 -> withAttr stylePlayer1 $ str "⬤" 
+  Occ 1 -> withAttr stylePlayer2 $ str "⬤" 
   Empty -> str " "
+  _     -> str "wtf"
 
 drawRow :: Row -> Widget ()
 drawRow r = vBox $ fmap drawCell r
@@ -105,7 +108,8 @@ drawTimer game =
 drawUI :: Game -> [Widget ()]
 drawUI game = [draw]
   where 
-   draw = drawBoard game <+> ( drawHelp
+   draw = (drawBoard game & withAttr styleChessBoard) 
+                         <+> ( drawHelp
                          <=>   drawTimer game
                              )
 
@@ -140,7 +144,8 @@ handleEvent (AppEvent Countdown) = do
     ON -> do
       if ((tictoc game) > 0)
         then modify $ timerUpdate $ (tictoc game) - 1
-        else M.halt -- Timeout
+        else do
+          modify $ randomPlace . switchPlayer
     -- conume dead countdown if any
     _ -> return ()
 handleEvent e = handleGameEvent e
