@@ -14,7 +14,7 @@ initialBoard = replicate (9 * 9) 0
 -- initialBoard = take (9 * 9) [0..]
 
 dummyTimeLimit :: Int
-dummyTimeLimit = 20
+dummyTimeLimit = 10
 
 
 main :: IO ()
@@ -25,7 +25,7 @@ main = do
     initialVty <- buildVty
     switch <- newTVarIO OFF
     forkIO $ forever $ tictocThread switch eventChan
-    let game = mkGame initialBoard 1 dummyTimeLimit switch
+    let game = mkGame initialBoard 0 dummyTimeLimit switch
     gameOver <- M.customMain initialVty buildVty 
                     (Just eventChan) app game
     -- gameOver <- M.defaultMain app game
