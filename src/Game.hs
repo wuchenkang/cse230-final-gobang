@@ -169,17 +169,6 @@ afterPlacement = do
       put game''
       return ()
 
-
--- -- AI functions
--- putAI :: Game -> Game 
-
--- calculateAIScore :: Game -> [Int]
-
--- calculateAIScoreAt :: Game -> Int -> Int -> Int
-
--- calculateAIScoreAtList :: Game -> Int -> [Cell] -> Int
-
-
 getColumnAt :: Game -> Int -> [Cell]
 getColumnAt game j = [board game !! row !! j | row <- [0..8]] 
 
