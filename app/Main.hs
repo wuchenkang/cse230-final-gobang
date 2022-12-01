@@ -9,6 +9,7 @@ import Control.Concurrent.STM
 import Control.Monad (forever)
 
 
+
 initialBoard :: [Int]
 initialBoard = replicate (9 * 9) 0
 -- initialBoard = take (9 * 9) [0..]
