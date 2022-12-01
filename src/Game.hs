@@ -25,7 +25,7 @@ data TimerStatus = ON | OFF deriving (Eq, Show)
 data Game = Game 
   { board :: Board
   , focusPos :: (Int, Int)
-  , player :: Int -- 0 P1, P2, AI
+  , player :: Int -- 1 P1, (P2, AI)
   , tictoc :: Int -- TODO: timer
   , timeLimit :: Int
   , timerStatus :: TVar TimerStatus
@@ -83,7 +83,7 @@ isOccupied game r c = helper $ board game !! r !! c
 placePiece :: Game -> Int -> Int -> Game
 placePiece game row col = game { board = board game & ix row . ix col .~ p }
   where
-    p = Occ $ fromEnum $ player game /= 0 
+    p = Occ $ player game 
 
 placeFocus :: Game -> Game
 placeFocus game = placePiece game y x
@@ -141,11 +141,10 @@ detectState game
   | otherwise = game {status = Playing}
 
 switchPlayer :: Game -> Game
-switchPlayer game
-  | m == Local    = game { player = 1-p }
-  | otherwise = game { player = 2-p }
-    where p = player game
-          m = mode game
+switchPlayer game | p == 1 = game { player = 2 }
+                  | otherwise = game { player = 1 }
+    where 
+      p = player game
 
 afterPlacement :: EventM () Game ()
 afterPlacement = do
