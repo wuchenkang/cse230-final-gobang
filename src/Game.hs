@@ -29,10 +29,11 @@ data Game = Game
   , tictoc :: Int -- TODO: timer
   , timeLimit :: Int
   , timerStatus :: TVar TimerStatus
-  , mode :: Int -- 0:PVP 1:AI
+  , mode :: Mode
   , status :: Status
   }
 
+data Mode = Local | AI deriving (Eq, Show)
 data Status = Playing | Win Int | Draw deriving (Eq, Show)
 
 mkGame :: [Int] -> Int -> Int -> TVar TimerStatus -> Game
@@ -44,7 +45,7 @@ mkGame ib p t s = Game
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
-  , mode = 0 -- NEED CHANGE, default PVP
+  , mode = Local
   , status = Playing
   }
   where
@@ -137,7 +138,7 @@ detectState :: Game -> Game
 detectState game  
   | winGame game = game {status = Win $ player game}
   | drawGame game = game {status = Draw}
-  | otherwise = timerUpdate (timeLimit game) game
+  | otherwise = game {status = Playing}
 
 switchPlayer :: Game -> Game
 switchPlayer game
