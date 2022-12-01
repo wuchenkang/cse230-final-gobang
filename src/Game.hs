@@ -95,3 +95,47 @@ tictocThread status chan = do
       writeBChan chan Countdown
     _ -> do
       threadDelay 1000000
+-- AI functions
+putAI :: Game -> Game 
+
+
+calculateAIScore :: Game -> [Int]
+
+calculateAIScoreAt :: Game -> Int -> Int -> Int
+
+
+calculateAIScoreAtList :: Int -> [Cell] -> Int
+calculateAIScoreAtList k list = do
+  let leftList = reverse  (take k list)
+  let rightList = drop k+1 list
+  let leftConNum = calculateContinueNum leftList
+  let rightConNum = calculateContinueNum RightList
+  let leftFirst = getFirstEle leftList
+  let rightFirst = getFirstEle rightFirst
+
+
+
+
+getFirstEle :: [Cell] -> Int
+getFirstEle [] = Empty
+getFirstEle [x] = if x == Occ 0 then 2 else if x == Empty else 1
+getFirstEle (x:xs) = if x == Occ 0 then 2 else 1
+
+calculateContinueNum :: [Cell] -> Int
+calculateContinueNum  [] = 0
+calculateContinueNum  (x1:x2) = if x1 == x2 then 2 else 0
+calculateContinueNum  x@(x1:x2:xs)  = if x1 == x2 then (1 + calculateContinueNum (tail x)) else 0
+
+
+
+getColumnAt :: Game -> Int -> [Cell]
+getColumnAt game j = [board game !! row !! j | row <- [0..8]] 
+
+getRowAt :: Game -> Int -> [Cell]
+getRowAt game i = board game !! i
+
+getLeftDiagonalAt :: Game -> Int -> [Cell]
+getLeftDiagonalAt game diff = [board game !! row !! col | row <- [0..8], col <- [0..8], row - col == diff]
+
+getRightDiagonalAt :: Game -> Int -> [Cell]
+getRightDiagonalAt game sum = [board game !! row !! col | row <- [0..8], col <- [0..8], row + col == sum]

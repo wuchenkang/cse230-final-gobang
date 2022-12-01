@@ -124,6 +124,7 @@ handleGameEvent (VtyEvent (V.EvKey k [])) = do
   
     V.KEnter -> do
       game <- get
+      
       liftIO $ turnOffTimer game
       modify $ placePiece . (timerUpdate $ timeLimit game)
     V.KChar 'q' -> M.halt
