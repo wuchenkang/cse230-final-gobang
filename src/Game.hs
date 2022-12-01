@@ -142,7 +142,7 @@ detectState game
 
 switchPlayer :: Game -> Game
 switchPlayer game
-  | m == 0    = game { player = 1-p }
+  | m == Local    = game { player = 1-p }
   | otherwise = game { player = 2-p }
     where p = player game
           m = mode game
