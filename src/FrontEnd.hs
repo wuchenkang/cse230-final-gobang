@@ -112,11 +112,11 @@ drawTerm game =
              | otherwise        = "AI"  
 
 drawWinner :: Game -> Status -> Widget ()
-drawWinner game (Win x) | player game == x = str " You won!"
-                        | otherwise        = str $ show name
+drawWinner game (Win x) = str $ show name ++ " Won!"
     where name | x == 0 = "Player 1"
                | x == 1 = "Player 2"
                | otherwise = "AI"
+drawWinner _ Draw = str $ show "Draw!"
 drawWinner _ _ = str "impossible to happen"
 
 drawDraw :: Widget ()
