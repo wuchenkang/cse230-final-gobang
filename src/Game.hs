@@ -46,7 +46,7 @@ mkGame ib p t s = Game
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
-  , mode = AI
+  , mode = Local
   , status = Playing
   }
   where
@@ -212,8 +212,8 @@ putAITesting boardNow = do
 getIJfromIndex :: Int -> (Int, Int)
 getIJfromIndex k = (i, j)
     where 
-        i = k `div` 8
-        j = k `mod` 8
+        i = k `div` 9
+        j = k `mod` 9
 
 
 calculateAIScore :: [[Cell]] -> [Int]
@@ -233,7 +233,7 @@ calculateAIScoreAt game i j = do
     let score2 = calculateAIScoreAtList i col
     let score3 = calculateAIScoreAtList diagnoalLeftIndex diagnoalLeft
     let score4 = calculateAIScoreAtList diagnoalRightIndex diagnoalRight
-    if item == Empty then 0 else score1 + score2 + score3 + score4
+    if item == Empty then score1 + score2 + score3 + score4 else 0
 
 
 calculateAIScoreAtList :: Int -> [Cell] -> Int
@@ -252,11 +252,20 @@ getFirstEle [x]
     | x == Occ 0 = 2
     | x == Occ 1 = 1
     | otherwise = 0
-getFirstEle (x:_) = if x == Occ 0 then 2 else 1
+getFirstEle (x : _)
+  | x == Occ 0 = 2
+  | x == Occ 1 = 1
+  | otherwise = 0
 
 calculateContinueNum :: [Cell] -> Int
 calculateContinueNum  [] = 0
 calculateContinueNum  [_] = 1
 calculateContinueNum  [x1, x2] = if x1 == x2 then 2 else 1
 calculateContinueNum  x@(x1:x2:_)  = if x1 == x2 then 1 + calculateContinueNum (tail x) else 1
+
+test1 :: [[Cell]]
+test1 = do
+  let all0 = replicate 9 Empty
+  let center1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
+  replicate 4 all0 ++ [center1] ++ replicate 4 all0
 
