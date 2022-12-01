@@ -1,30 +1,26 @@
 module FrontEnd where
 
 import Game
-import Data.Function ((&))
 import Lens.Micro
 import Brick 
 import qualified Brick.Main as M
 import Brick.Widgets.Border (border, borderWithLabel, hBorderWithLabel, vBorder, hBorder)
-import Brick.Widgets.Border.Style (unicode, unicodeBold)
+import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
 import Brick.Widgets.Center (center)
-import Data.Char (digitToInt)
 import Data.List (intersperse)
-import Data.List.Split (chunksOf)
-import Data.Maybe (fromMaybe)
 import qualified Graphics.Vty as V
-import Control.Concurrent 
 import Control.Concurrent.STM
 import Control.Monad.Trans (liftIO)
 
 
-stylePlayer1, stylePlayer2, styleHigh, styleMid, styleLow, styleFocus :: AttrName
+stylePlayer1, stylePlayer2, styleHigh, styleMid, styleLow, styleFocus, styleChessBoard :: AttrName
 stylePlayer1 = attrName "stylePlayer1"
 stylePlayer2 = attrName "stylePlayer2"
 styleHigh    = attrName "styleHigh"
 styleMid     = attrName "styleMid"
 styleLow     = attrName "styleLow"
 styleFocus   = attrName "styleFocus"
+styleChessBoard = attrName "styleChessBoard"
 
 attributes :: AttrMap
 attributes = attrMap V.defAttr 
@@ -34,6 +30,7 @@ attributes = attrMap V.defAttr
   , (styleMid,     fg V.yellow)
   , (styleLow,     fg V.red)
   , (styleFocus,   bg V.cyan) 
+  , (styleChessBoard, bg $ V.rgbColor 243 200 133)
   ]
 
 focusPosition :: Game -> [[Widget ()]] -> [[Widget ()]]
@@ -45,9 +42,10 @@ focusPosition game wboard =
 
 drawCell :: Cell -> Widget ()
 drawCell c = center $ case c of
-  Occ 1 -> withAttr stylePlayer1 $ str "⬤" 
-  Occ 2 -> withAttr stylePlayer2 $ str "⬤" 
+  Occ 0 -> withAttr stylePlayer1 $ str "⬤" 
+  Occ 1 -> withAttr stylePlayer2 $ str "⬤" 
   Empty -> str " "
+  _     -> str "wtf"
 
 drawRow :: Row -> Widget ()
 drawRow r = vBox $ fmap drawCell r
@@ -55,7 +53,7 @@ drawRow r = vBox $ fmap drawCell r
 drawBoard :: Game -> Widget ()
 -- drawBoard b = hBox $ fmap drawRow b
 drawBoard game = 
-  fmap (fmap (drawCell)) (board game)
+  fmap (fmap drawCell) (board game)
   & focusPosition game
   & fmap (intersperse (withBorderStyle unicode vBorder))
   & fmap (hBox)
@@ -100,14 +98,40 @@ drawTimer game =
                | c >= l `div` 4 = styleMid
                | otherwise      = styleLow
     l = timeLimit game
+  
+drawTerm :: Game -> Widget ()
+drawTerm game = 
+  str name 
+  & padRight Max
+  & borderWithLabel (str " Current Term ")
+  & withBorderStyle unicodeRounded
+  & hLimit 31
+  where name | player game == 0 = "Player 1"
+             | player game == 1 = "Player 2"
+             | otherwise        = "AI"  
 
--- TODO: add countdown, instruction, etc.
-drawUI :: Game -> [Widget ()]
-drawUI game = [draw]
-  where 
-   draw = drawBoard game <+> ( drawHelp
+drawWinner :: Game -> Status -> Widget ()
+drawWinner game (Win x) = str $ show name ++ " Won!"
+    where name | x == 0 = "Player 1"
+               | x == 1 = "Player 2"
+               | otherwise = "AI"
+drawWinner _ Draw = str $ show "Draw!"
+drawWinner _ _ = str "impossible to happen"
+
+drawDraw :: Widget ()
+drawDraw = str "Draw"
+
+drawNormal :: Game -> Widget ()
+drawNormal game = (drawBoard game & withAttr styleChessBoard) 
+                         <+> ( drawHelp
                          <=>   drawTimer game
+                         <=>   drawTerm game
                              )
+
+drawUI :: Game -> [Widget ()]
+drawUI g@Game{status=Playing} = [drawNormal g]
+drawUI Game{status=Draw}    = [str "Draw"]
+drawUI g                    = [drawWinner g $ status g]
 
 handleGameEvent :: BrickEvent () e -> EventM () Game ()
 handleGameEvent (VtyEvent (V.EvKey k [])) = do
@@ -126,23 +150,29 @@ handleGameEvent (VtyEvent (V.EvKey k [])) = do
       game <- get
       
       liftIO $ turnOffTimer game
-      modify $ placePiece . (timerUpdate $ timeLimit game)
+      modify placeFocus
+      afterPlacement
     V.KChar 'q' -> M.halt
     _ -> return ()
 handleGameEvent _ = return ()
 
 -- TODO: Time out to AI / PVP
 handleEvent :: BrickEvent () GobangEvent -> EventM () Game ()
-handleEvent (AppEvent (Placement (x, y))) = return ()
+handleEvent (AppEvent (Placement (x, y))) = do
+  modify (\g -> placePiece g x y)
+  afterPlacement
 handleEvent (AppEvent Countdown) = do
   game <- get
-  s <- liftIO $ readTVarIO $ (timerStatus game)
+  s <- liftIO $ readTVarIO $ timerStatus game
   case s of
     ON -> do
-      if ((tictoc game) > 0)
-        then modify $ timerUpdate $ (tictoc game) - 1
-        else M.halt -- Timeout
+      if tictoc game > 0
+        then modify $ timerUpdate $ tictoc game - 1
+        else do
+          modify $ randomPlace
+          afterPlacement
     -- conume dead countdown if any
+    -- endgame
     _ -> return ()
 handleEvent e = handleGameEvent e
 
