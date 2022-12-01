@@ -83,7 +83,7 @@ isOccupied game r c = helper $ board game !! r !! c
 placePiece :: Game -> Int -> Int -> Game
 placePiece game row col = game { board = board game & ix row . ix col .~ p }
   where
-    p = Occ $ player game
+    p = Occ $ fromEnum $ player game /= 0 
 
 placeFocus :: Game -> Game
 placeFocus game = placePiece game y x

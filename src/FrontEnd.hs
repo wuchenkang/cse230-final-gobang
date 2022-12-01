@@ -44,7 +44,6 @@ drawCell :: Cell -> Widget ()
 drawCell c = center $ case c of
   Occ 0 -> withAttr stylePlayer1 $ str "⬤" 
   Occ 1 -> withAttr stylePlayer2 $ str "⬤" 
-  Occ 2 -> withAttr stylePlayer2 $ str "⬤" 
   Empty -> str " "
   _     -> str "wtf"
 
