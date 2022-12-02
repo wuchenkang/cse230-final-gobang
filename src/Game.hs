@@ -2,11 +2,12 @@ module Game where
 
 import Data.List (isInfixOf)
 import Data.List.Split (chunksOf)
-import Lens.Micro
-import Brick
-import Brick.BChan
-import Control.Concurrent 
+import Lens.Micro ( (&), (.~), ix )
+import Brick ( modify, EventM, put, get )
+import Brick.BChan ( writeBChan, BChan )
+import Control.Concurrent ( threadDelay ) 
 import Control.Concurrent.STM
+    ( atomically, readTVarIO, writeTVar, TVar )
 import Control.Monad.Trans (liftIO)
 import Data.List ( maximumBy )
 
@@ -25,6 +26,7 @@ data GobangEvent =
 
 data TimerStatus = ON | OFF deriving (Eq, Show)
 
+<<<<<<< HEAD
 data Mode = Local |  Online | AI  deriving (Eq, Show)
 data Status = Playing | Win Int | Draw deriving (Eq, Show)
 
@@ -35,18 +37,25 @@ data Setup = Setup
     difficulty :: Int,
     ip :: String
   }
+=======
+data Difficulty = Easy | Hard deriving (Eq, Show)
+>>>>>>> 675811fd327add52e563cf71af2a1e5d2e8b6fa6
 
 data Game = Game 
   { board :: Board
   , focusPos :: (Int, Int)
   , player :: Int -- 1 P1, (P2, AI)
+  , identity :: Int -- 1 P1, (P2, AI), will never change
   , tictoc :: Int -- TODO: timer
   , timeLimit :: Int
   , timerStatus :: TVar TimerStatus
   , mode :: Mode
   , status :: Status
+  , gchan :: BChan GobangEvent
+  , difficulty :: Difficulty
   }
 
+<<<<<<< HEAD
 
 mkGame :: Setup -> [Int] -> Int -> TVar TimerStatus -> Game
 mkGame su ib t s = Game 
@@ -54,15 +63,33 @@ mkGame su ib t s = Game
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
   , player = initiative su
+=======
+data Mode = Local | AI | Online Int -- 0: host, 1: customer
+  deriving (Eq, Show)
+
+data Status = Playing | Win Int | Draw deriving (Eq, Show)
+
+mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> BChan GobangEvent -> Difficulty -> Game
+mkGame m ib p t s chan d = Game 
+  { 
+    board = chunksOf 9 $ mkCell <$> ib
+  , focusPos = (4, 4)
+  , player = p
+  , identity = p
+>>>>>>> 675811fd327add52e563cf71af2a1e5d2e8b6fa6
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
   , mode = if typ su == 0 then Local else if typ su == 1 then AI else Online
   , status = Playing
+  , gchan = chan
+  , difficulty = d
   }
   where
     mkCell 0 = Empty
     mkCell i = Occ i
+  
+
 
 data CursorDirection
   = North
@@ -170,15 +197,15 @@ afterPlacement = do
       let game' = switchPlayer game
       -- reset and turn on/off timer
       let game'' = timerUpdate (timeLimit game) game'
-      if player game'' == 2
-        then do 
-          liftIO $ turnOffTimer game''
-          put game''
-          -- AI invoke
-          modify putAI
-          return ()
-        else liftIO $ turnOnTimer game''
+      if mode game'' == Local
+        then liftIO $ turnOnTimer game'' 
+        else liftIO $ turnOffTimer game''
       put game''
+      if mode game'' == AI && player game'' == 2
+        then do
+          let (x, y) = putAI game''
+          liftIO $ writeBChan (gchan game'') (Placement (x, y))
+        else return ()
       return ()
 
 getColumnAt :: [[Cell]] -> Int -> [Cell]
@@ -204,13 +231,12 @@ getDiagonals game = [getLeftDiagonalAt (board game) i | i <- [-8..8]] ++ [getLef
 
 
 -- AI Section
-putAI :: Game -> Game
+putAI :: Game -> (Int, Int)
 putAI game = do
     let boardNow = board game
     let scores = calculateAIScore boardNow
     let (_, xs) = maximumBy (\x y -> compare (fst x) (fst y)) (zip scores [0..])
-    let (i, j) = getIJfromIndex xs
-    placePiece game i j
+    getIJfromIndex xs
 
 putAITesting :: [[Cell]] -> (Int, Int)
 putAITesting boardNow = do
@@ -223,8 +249,8 @@ putAITesting boardNow = do
 getIJfromIndex :: Int -> (Int, Int)
 getIJfromIndex k = (i, j)
     where 
-        i = k `div` 8
-        j = k `mod` 8
+        i = k `div` 9
+        j = k `mod` 9
 
 
 calculateAIScore :: [[Cell]] -> [Int]
@@ -244,7 +270,7 @@ calculateAIScoreAt game i j = do
     let score2 = calculateAIScoreAtList i col
     let score3 = calculateAIScoreAtList diagnoalLeftIndex diagnoalLeft
     let score4 = calculateAIScoreAtList diagnoalRightIndex diagnoalRight
-    if item == Empty then 0 else score1 + score2 + score3 + score4
+    if item == Empty then score1 + score2 + score3 + score4 else 0
 
 
 calculateAIScoreAtList :: Int -> [Cell] -> Int
@@ -263,10 +289,31 @@ getFirstEle [x]
     | x == Occ 0 = 2
     | x == Occ 1 = 1
     | otherwise = 0
-getFirstEle (x:_) = if x == Occ 0 then 2 else 1
+getFirstEle (x : _)
+  | x == Occ 0 = 2
+  | x == Occ 1 = 1
+  | otherwise = 0
 
 calculateContinueNum :: [Cell] -> Int
 calculateContinueNum  [] = 0
 calculateContinueNum  [_] = 1
 calculateContinueNum  [x1, x2] = if x1 == x2 then 2 else 1
 calculateContinueNum  x@(x1:x2:_)  = if x1 == x2 then 1 + calculateContinueNum (tail x) else 1
+<<<<<<< HEAD
+=======
+
+test1 :: [[Cell]]
+test1 = do
+  let all0 = replicate 9 Empty
+  let center1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
+  replicate 4 all0 ++ [center1] ++ replicate 4 all0
+
+
+test2 :: [[Cell]]
+test2 = do
+  let all0 = replicate 9 Empty
+  let row1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
+  let row2 = replicate 4 Empty ++ [Occ 1, Empty, Occ 2] ++ replicate 2 Empty
+  let row3 = replicate 4 Empty ++ [Occ 1,  Occ 2] ++ replicate 3 Empty
+  replicate 4 all0 ++ [row2, row3, row1] ++ replicate 2 all0
+>>>>>>> 675811fd327add52e563cf71af2a1e5d2e8b6fa6

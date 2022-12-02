@@ -176,7 +176,7 @@ drawTerm game =
   & withBorderStyle unicodeBold
   & hLimit 31
   where name | player game == 1 = "Player 1"
-             | player game == 2 = "Player 2"
+             | player game == 2 && mode game /= AI = "Player 2"
              | otherwise        = "AI"  
 
 drawWinner :: Game -> Status -> Widget ()
@@ -217,9 +217,12 @@ handleGameEvent (VtyEvent (V.EvKey k [])) = do
   
     V.KEnter -> do
       game <- get
-      liftIO $ turnOffTimer game
-      modify placeFocus
-      afterPlacement
+      if player game /= identity game
+        then return ()
+        else do
+          liftIO $ turnOffTimer game
+          modify placeFocus
+          afterPlacement
     V.KChar 'q' -> M.halt
     _ -> return ()
 handleGameEvent _ = return ()

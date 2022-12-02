@@ -27,6 +27,7 @@ library
   exposed-modules:
       FrontEnd
       Game
+      NetUtil
   other-modules:
       Paths_gobang
   hs-source-dirs:
@@ -34,13 +35,16 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , binary
     , brick
+    , bytestring
     , lens
     , microlens
     , microlens-mtl
     , microlens-platform
     , microlens-th
     , mtl
+    , network
     , split
     , stm
     , text
@@ -57,7 +61,9 @@ executable gobang-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , binary
     , brick
+    , bytestring
     , gobang
     , lens
     , microlens
@@ -65,6 +71,7 @@ executable gobang-exe
     , microlens-platform
     , microlens-th
     , mtl
+    , network
     , split
     , stm
     , text
