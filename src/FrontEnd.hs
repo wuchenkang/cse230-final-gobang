@@ -66,9 +66,9 @@ drawBoard game =
 
 drawHelp :: Widget ()
 drawHelp =
-  [ "move:    ←↓↑→ / wasd "
-  , "place:   Enter"
-  , "quit:    q"
+  [ "Move:    ←↓↑→ / WASD "
+  , "Place:   Enter"
+  , "Quit:    Q"
   ]
   & unlines
   & str
@@ -80,20 +80,19 @@ drawHelp =
 
 drawTimer :: Game -> Widget ()
 drawTimer game = 
-  [ show $ c `div` 60
-  , " : " 
-  , show $ c `mod` 60
-  ]
-  & fmap str
-  & hBox
-  & padRight Max
-  & padLeftRight 1
+    str timestr
+  & padLeftRight  (14 - (length timestr `div` 2))
   & borderWithLabel (str " Time Left ")
   & withAttr sufficient
   & withBorderStyle unicodeBold
   & hLimit 31
   where 
     c = tictoc game
+    m = c `div` 60
+    s = c `mod` 60
+    minstr = if m < 10 then "0" ++ show m else show m
+    secstr = if s < 10 then "0" ++ show s else show s
+    timestr = minstr ++ " : " ++ secstr
     sufficient | c >= l `div` 2 = styleHigh
                | c >= l `div` 4 = styleMid
                | otherwise      = styleLow
@@ -101,19 +100,20 @@ drawTimer game =
   
 drawTerm :: Game -> Widget ()
 drawTerm game = 
-  str name 
-  & padRight Max
+    str name 
+  & padLeftRight  (14 - (length name `div` 2))
+  -- & padRight Max
   & borderWithLabel (str " Current Term ")
-  & withBorderStyle unicodeRounded
+  & withBorderStyle unicodeBold
   & hLimit 31
   where name | player game == 1 = "Player 1"
              | player game == 2 && mode game /= AI = "Player 2"
              | otherwise        = "AI"  
 
 drawWinner :: Game -> Status -> Widget ()
-drawWinner game (Win x) = str $ show name ++ " Won!"
-    where name | x == 0 = "Player 1"
-               | x == 1 = "Player 2"
+drawWinner _ (Win x) = str $ show name ++ " Won!"
+    where name | x == 1 = "Player 1"
+               | x == 2 = "Player 2"
                | otherwise = "AI"
 drawWinner _ Draw = str $ show "Draw!"
 drawWinner _ _ = str "impossible to happen"
@@ -130,8 +130,8 @@ drawNormal game = (drawBoard game & withAttr styleChessBoard)
 
 drawUI :: Game -> [Widget ()]
 drawUI g@Game{status=Playing} = [drawNormal g]
-drawUI Game{status=Draw}    = [str "Draw"]
-drawUI g                    = [drawWinner g $ status g]
+drawUI Game{status=Draw}      = [drawDraw]
+drawUI g@Game{status=Win _}   = [drawWinner g $ status g]
 
 handleGameEvent :: BrickEvent () e -> EventM () Game ()
 handleGameEvent (VtyEvent (V.EvKey k [])) = do
@@ -185,7 +185,7 @@ initializeEvent = do
 
 app :: App Game GobangEvent ()
 app = App 
-  { appDraw = drawUI
+  { appDraw         = drawUI
   , appChooseCursor = neverShowCursor
   , appHandleEvent  = handleEvent
   , appStartEvent   = initializeEvent

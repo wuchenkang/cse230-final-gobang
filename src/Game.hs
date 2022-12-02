@@ -9,6 +9,7 @@ import Control.Concurrent ( threadDelay )
 import Control.Concurrent.STM
     ( atomically, readTVarIO, writeTVar, TVar )
 import Control.Monad.Trans (liftIO)
+import Data.List ( maximumBy )
 
 data Cell
   = Occ Int
@@ -171,24 +172,102 @@ afterPlacement = do
       put game''
       return ()
 
-getColumnAt :: Game -> Int -> [Cell]
-getColumnAt game j = [board game !! row !! j | row <- [0..8]] 
+getColumnAt :: [[Cell]] -> Int -> [Cell]
+getColumnAt game j = [game !! row !! j | row <- [0..8]] 
 
-getRowAt :: Game -> Int -> [Cell]
-getRowAt game i = board game !! i
+getRowAt :: [[Cell]] -> Int -> [Cell]
+getRowAt game i = game !! i
 
-getLeftDiagonalAt :: Game -> Int -> [Cell]
-getLeftDiagonalAt game diff = [board game !! row !! col | row <- [0..8], col <- [0..8], row - col == diff]
+getLeftDiagonalAt :: [[Cell]] -> Int -> [Cell]
+getLeftDiagonalAt game diff = [game !! row !! col | row <- [0..8], col <- [0..8], row - col == diff]
 
-getRightDiagonalAt :: Game -> Int -> [Cell]
-getRightDiagonalAt game s = [board game !! row !! col | row <- [0..8], col <- [0..8], row + col == s]
+getRightDiagonalAt :: [[Cell]] -> Int -> [Cell]
+getRightDiagonalAt game s = [game !! row !! col | row <- [0..8], col <- [0..8], row + col == s]
 
 getRows :: Game -> [[Cell]]
-getRows game = [getRowAt game i | i <- [0..8]]
+getRows game = [getRowAt (board game) i | i <- [0..8]]
 
 getColumns :: Game -> [[Cell]]
-getColumns game = [getColumnAt game i | i <- [0..8]]
+getColumns game = [getColumnAt (board game) i | i <- [0..8]]
 
 getDiagonals :: Game -> [[Cell]]
-getDiagonals game = [getLeftDiagonalAt game i | i <- [-8..8]] ++ [getLeftDiagonalAt game i | i <- [0, 16]]
+getDiagonals game = [getLeftDiagonalAt (board game) i | i <- [-8..8]] ++ [getLeftDiagonalAt (board game) i | i <- [0, 16]]
+
+
+-- AI Section
+putAI :: Game -> Game
+putAI game = do
+    let boardNow = board game
+    let scores = calculateAIScore boardNow
+    let (_, xs) = maximumBy (\x y -> compare (fst x) (fst y)) (zip scores [0..])
+    let (i, j) = getIJfromIndex xs
+    placePiece game i j
+
+putAITesting :: [[Cell]] -> (Int, Int)
+putAITesting boardNow = do
+    let scores = calculateAIScore boardNow
+    let (_, xs) = maximumBy (\x y -> compare (fst x) (fst y)) (zip scores [0..])
+    getIJfromIndex xs
+    
+
+
+getIJfromIndex :: Int -> (Int, Int)
+getIJfromIndex k = (i, j)
+    where 
+        i = k `div` 9
+        j = k `mod` 9
+
+
+calculateAIScore :: [[Cell]] -> [Int]
+calculateAIScore game = [calculateAIScoreAt game row col | row <- [0..8], col <- [0..8]]
+
+calculateAIScoreAt :: [[Cell]] -> Int -> Int -> Int
+calculateAIScoreAt game i j = do
+    let item = game !! i !! j
+    let row = getRowAt game i
+    let col = getColumnAt game j
+    let diagnoalLeft = getLeftDiagonalAt game (i - j)
+    let diagnoalRight = getRightDiagonalAt game (i + j)
+    let diagnoalLeftIndex = min i j
+    let tempMin = min 8 (i + j)
+    let diagnoalRightIndex = tempMin - i - 1
+    let score1 = calculateAIScoreAtList j row
+    let score2 = calculateAIScoreAtList i col
+    let score3 = calculateAIScoreAtList diagnoalLeftIndex diagnoalLeft
+    let score4 = calculateAIScoreAtList diagnoalRightIndex diagnoalRight
+    if item == Empty then score1 + score2 + score3 + score4 else 0
+
+
+calculateAIScoreAtList :: Int -> [Cell] -> Int
+calculateAIScoreAtList k list = do
+    let leftList = reverse (take k list)
+    let rightList = drop (k+1) list
+    let leftConNum = calculateContinueNum leftList
+    let rightConNum = calculateContinueNum rightList
+    let leftFirst = getFirstEle leftList
+    let rightFirst = getFirstEle rightList
+    ((10 ^ leftConNum) * leftFirst) + ((10 ^ rightConNum) * rightFirst)
+
+getFirstEle :: [Cell] -> Int
+getFirstEle [] = 0
+getFirstEle [x]
+    | x == Occ 0 = 2
+    | x == Occ 1 = 1
+    | otherwise = 0
+getFirstEle (x : _)
+  | x == Occ 0 = 2
+  | x == Occ 1 = 1
+  | otherwise = 0
+
+calculateContinueNum :: [Cell] -> Int
+calculateContinueNum  [] = 0
+calculateContinueNum  [_] = 1
+calculateContinueNum  [x1, x2] = if x1 == x2 then 2 else 1
+calculateContinueNum  x@(x1:x2:_)  = if x1 == x2 then 1 + calculateContinueNum (tail x) else 1
+
+test1 :: [[Cell]]
+test1 = do
+  let all0 = replicate 9 Empty
+  let center1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
+  replicate 4 all0 ++ [center1] ++ replicate 4 all0
 

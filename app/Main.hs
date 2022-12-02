@@ -9,6 +9,11 @@ import Control.Concurrent ( forkIO )
 import Control.Concurrent.STM ( newTVarIO )
 import Control.Monad (forever)
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> origin/main
 initialBoard :: [Int]
 initialBoard = replicate (9 * 9) 0
 -- initialBoard = take (9 * 9) [0..]
