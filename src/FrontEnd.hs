@@ -1,9 +1,15 @@
 module FrontEnd where
 
+import Types
 import Game
 import Lens.Micro
 import Brick 
 import qualified Brick.Main as M
+import qualified Brick.Widgets.Dialog as D
+import qualified Brick.Widgets.Center as C
+import qualified Brick.AttrMap as A
+import Brick.Util (on, bg)
+import qualified Brick.Types as T
 import Brick.Widgets.Border (border, borderWithLabel, hBorderWithLabel, vBorder, hBorder)
 import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
 import Brick.Widgets.Center (center)
@@ -11,7 +17,99 @@ import Data.List (intersperse)
 import qualified Graphics.Vty as V
 import Control.Concurrent.STM
 import Control.Monad.Trans (liftIO)
+import Brick.BChan ( writeBChan, BChan )
 
+title :: String
+title = "\n\
+\  ____       _\n\
+\ / ___| ___ | |__   __ _ _ __   __ _\n\
+\| |  _ / _ \\| '_ \\ / _` | '_ \\ / _` |\n\
+\| |_| | (_) | |_) | (_| | | | | (_| |\n\
+\ \\____|\\___/|_.__/ \\__,_|_| |_|\\__, |\n\
+\                               |___/\n\
+\"
+
+drawSelectMode :: Setup -> Widget ()
+drawSelectMode setup =
+        str title
+    <=> (if typ setup == 0 then withAttr styleFocus (str "1. Local  PVP") else str "1. Local  PVP")
+    <=> (if typ setup == 1 then withAttr styleFocus (str "2. Local  PVE") else str "2. Local  PVE")
+    <=> (if typ setup == 2 then withAttr styleFocus (str "3. Create Online PVP") else str "3. Create Online PVP")
+    <=> (if typ setup == 3 then withAttr styleFocus (str "4. Join Online PVP") else str "4. Join Online PVP")
+
+drawSelectInitiative :: Setup -> Widget ()
+drawSelectInitiative setup =
+        str title
+    <=> (if initiative setup == 1 then withAttr styleFocus (str "1. You first") else str "1. You first")
+    <=> (if initiative setup == 2 then withAttr styleFocus (str "2. Opponent first") else str "2. Opponent first")
+
+drawSelectDiff :: Setup -> Widget ()
+drawSelectDiff setup =
+        str title
+    <=> (if diff setup == 1 then withAttr styleFocus (str "1. Easy") else str "1. Easy")
+    <=> (if diff setup == 2 then withAttr styleFocus (str "2. Hard") else str "2. Hard")
+
+drawSetupUI :: Setup -> [Widget ()]
+drawSetupUI setup@Setup{state=SelectMode} = [drawSelectMode setup]
+drawSetupUI setup@Setup{state=SelectInitiative} = [drawSelectInitiative setup]
+drawSetupUI setup@Setup{state=SelectDiff} = [drawSelectDiff setup]
+
+moveSetupTyp :: CursorDirection -> Setup -> Setup
+moveSetupTyp North setup =  setup {typ = (typ setup - 1) `mod` 4}
+moveSetupTyp South setup =  setup {typ = (typ setup + 1) `mod` 4}
+moveSetupTyp _ setup = setup
+
+
+moveSetupInitiative :: CursorDirection -> Setup -> Setup
+moveSetupInitiative North setup =  setup {initiative = initiative setup `mod` 2 + 1}
+moveSetupInitiative South setup =  setup {initiative = initiative setup `mod` 2 + 1}
+moveSetupInitiative _ setup = setup
+
+moveSetupDiff :: CursorDirection -> Setup -> Setup
+moveSetupDiff North setup =  setup {diff = diff setup `mod` 2 + 1}
+moveSetupDiff South setup =  setup {diff = diff setup `mod` 2 + 1}
+moveSetupDiff _ setup = setup
+
+handleSetupEvent :: BrickEvent () e -> EventM () Setup ()
+handleSetupEvent (VtyEvent (V.EvKey k [])) = do
+  setup <- get
+  case state setup of
+    SelectMode ->
+      case k of
+          V.KUp -> modify $ moveSetupTyp North
+          V.KDown -> modify $ moveSetupTyp South
+          V.KEnter -> do
+            if typ setup == 2 || typ setup == 3
+              then do { modify $ \s -> s{ iden = typ setup - 1 }; M.halt }
+              else modify $ \s -> s {state = SelectInitiative} 
+          -- V.KEnter -> 
+          _ -> return ()
+    SelectInitiative ->
+      case k of
+          V.KUp -> modify $ moveSetupInitiative North
+          V.KDown -> modify $ moveSetupInitiative South
+          V.KEnter -> do
+            if typ setup == 1
+              then modify $ \s -> s {state = SelectDiff}
+              else M.halt
+          _ -> return ()
+    SelectDiff ->
+      case k of
+          V.KUp -> modify $ moveSetupDiff North
+          V.KDown -> modify $ moveSetupDiff South
+          V.KEnter -> M.halt
+          _ -> return ()
+handleSetupEvent _ = return ()
+
+
+setupApp :: M.App (Setup) e ()
+setupApp =
+    M.App { M.appDraw = drawSetupUI
+          , M.appChooseCursor = M.neverShowCursor
+          , M.appHandleEvent = handleSetupEvent
+          , M.appStartEvent = return ()
+          , M.appAttrMap = const attributes
+          }
 
 stylePlayer1, stylePlayer2, styleHigh, styleMid, styleLow, styleFocus, styleChessBoard :: AttrName
 stylePlayer1 = attrName "stylePlayer1"
@@ -148,7 +246,7 @@ handleGameEvent (VtyEvent (V.EvKey k [])) = do
   
     V.KEnter -> do
       game <- get
-      if player game /= identity game
+      if mode game /= Local && (not $ isYourTerm game)
         then return ()
         else do
           liftIO $ turnOffTimer game
@@ -161,7 +259,7 @@ handleGameEvent _ = return ()
 -- TODO: Time out to AI / PVP
 handleEvent :: BrickEvent () GobangEvent -> EventM () Game ()
 handleEvent (AppEvent (Placement (x, y))) = do
-  modify (\g -> placePiece g x y)
+  modify (\g -> placePiece g y x)
   afterPlacement
 handleEvent (AppEvent Countdown) = do
   game <- get
@@ -181,7 +279,11 @@ handleEvent e = handleGameEvent e
 initializeEvent :: EventM () Game ()
 initializeEvent = do
   game <- get
-  liftIO $ turnOnTimer game
+  if mode game == AI && player game == 2
+    then do 
+      let (y, x) = putAI game
+      liftIO $ writeBChan (gchan game) (Placement (x, y)) 
+    else liftIO $ turnOnTimer game
 
 app :: App Game GobangEvent ()
 app = App 

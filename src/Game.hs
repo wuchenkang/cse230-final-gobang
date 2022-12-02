@@ -1,5 +1,6 @@
 module Game where
 
+import Types
 import Data.List (isInfixOf)
 import Data.List.Split (chunksOf)
 import Lens.Micro ( (&), (.~), ix )
@@ -10,68 +11,30 @@ import Control.Concurrent.STM
     ( atomically, readTVarIO, writeTVar, TVar )
 import Control.Monad.Trans (liftIO)
 import Data.List ( maximumBy )
+import Network.Socket ( Socket )
+import NetUtil
+import Control.Monad (when)
 
-data Cell
-  = Occ Int
-  | Empty
-  deriving (Eq, Show)
 
-type Row = [Cell]
-type Board = [Row]
-
-data GobangEvent = 
-  Countdown | Placement (Int, Int)
-
-data TimerStatus = ON | OFF deriving (Eq, Show)
-
-data Difficulty = Easy | Hard deriving (Eq, Show)
-
-data Game = Game 
-  { board :: Board
-  , focusPos :: (Int, Int)
-  , player :: Int -- 1 P1, (P2, AI)
-  , identity :: Int -- 1 P1, (P2, AI), will never change
-  , tictoc :: Int -- TODO: timer
-  , timeLimit :: Int
-  , timerStatus :: TVar TimerStatus
-  , mode :: Mode
-  , status :: Status
-  , gchan :: BChan GobangEvent
-  , difficulty :: Difficulty
-  }
-
-data Mode = Local | AI | Online Int -- 0: host, 1: customer
-  deriving (Eq, Show)
-
-data Status = Playing | Win Int | Draw deriving (Eq, Show)
-
-mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> BChan GobangEvent -> Difficulty -> Game
-mkGame m ib p t s chan d = Game 
+mkGame :: Setup -> [Int] -> Int -> TVar TimerStatus -> BChan GobangEvent -> Maybe Socket -> Game
+mkGame su ib t s chan sock = Game 
   { 
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
-  , player = p
-  , identity = p
+  , player = initiative su
+  , identity = iden su
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
-  , mode = AI
+  , mode = if typ su == 0 then Local else if typ su == 1 then AI else Online (iden su - 1)
   , status = Playing
   , gchan = chan
-  , difficulty = d
+  , msock = sock
+  , difficulty = if diff su == 1 then Easy else Hard
   }
   where
     mkCell 0 = Empty
     mkCell i = Occ i
-  
-
-
-data CursorDirection
-  = North
-  | South
-  | East
-  | West
-  deriving (Eq, Show)
 
 moveCursor :: CursorDirection -> Game -> Game
 moveCursor d g = 
@@ -160,6 +123,9 @@ switchPlayer game | p == 1 = game { player = 2 }
     where 
       p = player game
 
+isYourTerm :: Game -> Bool
+isYourTerm game = player game == identity game
+
 afterPlacement :: EventM () Game ()
 afterPlacement = do
   modify detectState
@@ -168,19 +134,24 @@ afterPlacement = do
     Win _ -> return ()
     Draw  -> return ()
     _     -> do
-      -- switch player
-      let game' = switchPlayer game
       -- reset and turn on/off timer
-      let game'' = timerUpdate (timeLimit game) game'
-      if mode game'' == Local
-        then liftIO $ turnOnTimer game'' 
-        else liftIO $ turnOffTimer game''
-      put game''
-      if mode game'' == AI && player game'' == 2
-        then do
-          let (x, y) = putAI game''
-          liftIO $ writeBChan (gchan game'') (Placement (x, y))
-        else return ()
+      let game' = timerUpdate (timeLimit game) game
+      put game'
+      -- change stage
+      case mode game' of
+        Local -> liftIO $ turnOnTimer game'
+        AI -> do
+          when (isYourTerm game') $ do 
+              let (y, x) = putAI game'
+              liftIO $ writeBChan (gchan game') (Placement (x, y))
+        Online _ -> 
+          when (isYourTerm game') $ do
+            let (c, r) = focusPos game'
+            let ms = msock game'
+            case ms of
+              Nothing -> return ()
+              (Just sock) -> liftIO $ sendPlacement c r sock
+      modify switchPlayer
       return ()
 
 getColumnAt :: [[Cell]] -> Int -> [Cell]
@@ -217,7 +188,6 @@ putAITesting boardNow d = do
     let scores = calculateAIScore boardNow d
     let (_, xs) = maximumBy (\x y -> compare (fst x) (fst y)) (zip scores [0..])
     getIJfromIndex xs
-    
 
 
 getIJfromIndex :: Int -> (Int, Int)

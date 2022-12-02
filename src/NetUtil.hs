@@ -1,18 +1,16 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use <$>" #-}
 
-module NetUtil (createRoom, joinGame, waitForPlacement, sendPlacement ) where
+module NetUtil (createRoom, joinGame, waitForPlacement, sendPlacement, setSockGameState ) where
 
-import Game
+import Types
 import Data.Binary ( decode, encode, Binary(get, put) )
 import Control.Monad (forever)
 import Network.Socket 
-import Network.Socket (getAddrInfo)
-import qualified Control.Exception as EX
 import Network.Socket.ByteString ( recv, send )
 import Data.ByteString (toStrict, fromStrict)
 import Brick.BChan ( writeBChan, BChan )
-
+import Control.Concurrent ( forkIO ) 
 
 type R = Int
 type C = Int
@@ -54,7 +52,6 @@ waitForPlacement :: Socket -> BChan GobangEvent  -> IO ()
 waitForPlacement sock chan = do
     msg <- recv sock 1024
     let p@(Position c r) = decode $ fromStrict msg :: Payload
-    print p
     writeBChan chan $ Placement (c, r)
     return ()
 
@@ -82,3 +79,22 @@ clientMain = do
             let xy = map read (words l) :: [Int]
             sendPlacement (head xy) (last xy) sock
             return ()
+
+setSockGameState :: Game -> IO Game
+setSockGameState game = do
+    case mode game of
+        Local      -> do { putStrLn "Playing local pvp"; return game }
+        AI         -> do { putStrLn "Playing with AI"; return game }
+        (Online 0) -> do
+            putStrLn "Starting server ..."
+            sock <- createRoom
+            let game' = game { msock = Just sock }
+            _ <- forkIO $ forever $ waitForPlacement sock $ gchan game
+            return game'
+        (Online 1) -> do
+            putStrLn "Joining game ..."
+            sock <- joinGame
+            let game' = game { msock = Just sock }
+            _ <- forkIO $ forever $ waitForPlacement sock $ gchan game
+            return game'
+        _ -> return game

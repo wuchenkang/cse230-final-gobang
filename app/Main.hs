@@ -1,4 +1,6 @@
 module Main where
+
+import Types
 import Game 
 import FrontEnd
 import NetUtil
@@ -8,7 +10,6 @@ import qualified Graphics.Vty as V
 import Control.Concurrent ( forkIO ) 
 import Control.Concurrent.STM ( newTVarIO )
 import Control.Monad (forever)
-import Game (Difficulty(Easy, Hard))
 
 initialBoard :: [Int]
 initialBoard = replicate (9 * 9) 0
@@ -17,10 +18,16 @@ initialBoard = replicate (9 * 9) 0
 dummyTimeLimit :: Int
 dummyTimeLimit = 10
 
-
 main :: IO ()
 main = do
-    -- add user input to set up game
+    setup <- M.defaultMain  setupApp Setup {
+        state=SelectMode,
+        typ=0,
+        initiative=1,
+        diff=1,
+        ip="127.0.0.1",
+        iden=1
+    }
     eventChan <- BC.newBChan dummyTimeLimit
     let buildVty = V.mkVty V.defaultConfig
     initialVty <- buildVty
@@ -30,25 +37,13 @@ main = do
     _ <- forkIO $ forever $ tictocThread switch eventChan
 
     -- TODO: game from panel
-    let game = mkGame AI initialBoard 1 dummyTimeLimit switch eventChan Hard
+    let game = mkGame setup initialBoard dummyTimeLimit switch eventChan Nothing :: Game
 
     -- start server or client thread
-    case mode game of
-        Local      -> putStrLn "Playing local pvp"
-        AI         -> putStrLn "Playing with AI"
-        (Online 0) -> do
-            putStrLn "Starting server ..."
-            sock <- createRoom
-            _ <- forkIO $ forever $ waitForPlacement sock eventChan
-            return ()
-        (Online 1) -> do
-            putStrLn "Joining game ..."
-            sock <- joinGame
-            return ()
-        _ -> return ()
+    game' <- setSockGameState game
 
     gameOver <- M.customMain initialVty buildVty 
-                    (Just eventChan) app game
+                    (Just eventChan) app game'
     -- gameOver <- M.defaultMain app game
     return ()
     -- M.simpleMain (drawUI game)
