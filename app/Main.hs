@@ -1,5 +1,5 @@
 module Main where
-import Game 
+import Game
 import FrontEnd
 import qualified Brick.Main as M
 import qualified Brick.BChan as BC
@@ -20,13 +20,19 @@ dummyTimeLimit = 10
 
 main :: IO ()
 main = do
-    -- add user input to set up game
+    setup <- M.defaultMain  setupApp Setup {
+        state=SelectMode,
+        typ=0,
+        initiative=1,
+        difficulty=1,
+        ip="192.168.1.1"
+    }
     eventChan <- BC.newBChan dummyTimeLimit
     let buildVty = V.mkVty V.defaultConfig
     initialVty <- buildVty
     switch <- newTVarIO OFF
     forkIO $ forever $ tictocThread switch eventChan
-    let game = mkGame initialBoard 1 dummyTimeLimit switch
+    let game = mkGame setup initialBoard dummyTimeLimit switch
     gameOver <- M.customMain initialVty buildVty 
                     (Just eventChan) app game
     -- gameOver <- M.defaultMain app game

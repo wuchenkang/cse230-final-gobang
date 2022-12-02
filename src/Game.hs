@@ -10,6 +10,8 @@ import Control.Concurrent.STM
 import Control.Monad.Trans (liftIO)
 import Data.List ( maximumBy )
 
+data State = SelectMode | SelectInitiative deriving (Eq, Show)
+
 data Cell
   = Occ Int
   | Empty
@@ -23,6 +25,17 @@ data GobangEvent =
 
 data TimerStatus = ON | OFF deriving (Eq, Show)
 
+data Mode = Local |  Online | AI  deriving (Eq, Show)
+data Status = Playing | Win Int | Draw deriving (Eq, Show)
+
+data Setup = Setup
+  { state :: State,
+    typ :: Int,
+    initiative :: Int,
+    difficulty :: Int,
+    ip :: String
+  }
+
 data Game = Game 
   { board :: Board
   , focusPos :: (Int, Int)
@@ -34,19 +47,17 @@ data Game = Game
   , status :: Status
   }
 
-data Mode = Local | AI deriving (Eq, Show)
-data Status = Playing | Win Int | Draw deriving (Eq, Show)
 
-mkGame :: [Int] -> Int -> Int -> TVar TimerStatus -> Game
-mkGame ib p t s = Game 
+mkGame :: Setup -> [Int] -> Int -> TVar TimerStatus -> Game
+mkGame su ib t s = Game 
   { 
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
-  , player = p
+  , player = initiative su
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
-  , mode = AI
+  , mode = if typ su == 0 then Local else if typ su == 1 then AI else Online
   , status = Playing
   }
   where
@@ -259,4 +270,3 @@ calculateContinueNum  [] = 0
 calculateContinueNum  [_] = 1
 calculateContinueNum  [x1, x2] = if x1 == x2 then 2 else 1
 calculateContinueNum  x@(x1:x2:_)  = if x1 == x2 then 1 + calculateContinueNum (tail x) else 1
-

@@ -4,6 +4,11 @@ import Game
 import Lens.Micro
 import Brick 
 import qualified Brick.Main as M
+import qualified Brick.Widgets.Dialog as D
+import qualified Brick.Widgets.Center as C
+import qualified Brick.AttrMap as A
+import Brick.Util (on, bg)
+import qualified Brick.Types as T
 import Brick.Widgets.Border (border, borderWithLabel, hBorderWithLabel, vBorder, hBorder)
 import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
 import Brick.Widgets.Center (center)
@@ -12,6 +17,70 @@ import qualified Graphics.Vty as V
 import Control.Concurrent.STM
 import Control.Monad.Trans (liftIO)
 
+title :: String
+title = "\n\
+\  ____       _\n\
+\ / ___| ___ | |__   __ _ _ __   __ _\n\
+\| |  _ / _ \\| '_ \\ / _` | '_ \\ / _` |\n\
+\| |_| | (_) | |_) | (_| | | | | (_| |\n\
+\ \\____|\\___/|_.__/ \\__,_|_| |_|\\__, |\n\
+\                               |___/\n\
+\"
+
+drawSelectMode :: Setup -> Widget ()
+drawSelectMode setup =
+        str title
+    <=> (if typ setup == 0 then withAttr styleFocus (str "1. Local  PVP") else str "1. Local  PVP")
+    <=> (if typ setup == 1 then withAttr styleFocus (str "2. Local  PVE") else str "2. Local  PVE")
+    <=> (if typ setup == 2 then withAttr styleFocus (str "3. Online PVP") else str "3. Online PVP")
+
+drawSelectInitiative :: Setup -> Widget ()
+drawSelectInitiative setup =
+        str title
+    <=> (if initiative setup == 1 then withAttr styleFocus (str "1. You first") else str "1. You first")
+    <=> (if initiative setup == 2 then withAttr styleFocus (str "2. Opponent first") else str "2. Opponent first")
+
+drawSetupUI :: Setup -> [Widget ()]
+drawSetupUI setup@Setup{state=SelectMode} = [drawSelectMode setup]
+drawSetupUI setup@Setup{state=SelectInitiative} = [drawSelectInitiative setup]
+
+moveSetupTyp :: CursorDirection -> Setup -> Setup
+moveSetupTyp North setup =  setup {typ = (typ setup - 1) `mod` 3}
+moveSetupTyp South setup =  setup {typ = (typ setup + 1) `mod` 3}
+moveSetupTyp _ setup = setup
+
+moveSetupInitiative :: CursorDirection -> Setup -> Setup
+moveSetupInitiative North setup =  setup {initiative = initiative setup `mod` 2 + 1}
+moveSetupInitiative South setup =  setup {initiative = initiative setup `mod` 2 + 1}
+moveSetupInitiative _ setup = setup
+
+handleSetupEvent :: BrickEvent () e -> EventM () Setup ()
+handleSetupEvent (VtyEvent (V.EvKey k [])) = do
+  setup <- get
+  case state setup of
+    SelectMode ->
+      case k of
+          V.KUp -> modify $ moveSetupTyp North
+          V.KDown -> modify $ moveSetupTyp South
+          V.KEnter -> modify $ \s -> s {state = SelectInitiative}
+          _ -> return ()
+    SelectInitiative ->
+      case k of
+          V.KUp -> modify $ moveSetupInitiative North
+          V.KDown -> modify $ moveSetupInitiative South
+          V.KEnter -> M.halt
+          _ -> return ()
+handleSetupEvent _ = return ()
+
+
+setupApp :: M.App (Setup) e ()
+setupApp =
+    M.App { M.appDraw = drawSetupUI
+          , M.appChooseCursor = M.neverShowCursor
+          , M.appHandleEvent = handleSetupEvent
+          , M.appStartEvent = return ()
+          , M.appAttrMap = const attributes
+          }
 
 stylePlayer1, stylePlayer2, styleHigh, styleMid, styleLow, styleFocus, styleChessBoard :: AttrName
 stylePlayer1 = attrName "stylePlayer1"
