@@ -21,6 +21,7 @@ data Mode = Local | AI | Online Int -- 0: host, 1: customer
   deriving (Eq, Show)
 
 data Status = Playing | Win Int | Draw deriving (Eq, Show)
+data Difficulty = Easy | Hard deriving (Eq, Show)
 
 data Game = Game 
   { board :: Board
@@ -34,6 +35,7 @@ data Game = Game
   , status :: Status
   , gchan :: BChan GobangEvent
   , msock :: Maybe Socket
+  , difficulty :: Difficulty
   }
 
 data CursorDirection

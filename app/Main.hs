@@ -30,7 +30,7 @@ main = do
     _ <- forkIO $ forever $ tictocThread switch eventChan
 
     -- TODO: game from panel
-    let game = mkGame (Online 0) initialBoard 1 dummyTimeLimit switch eventChan Nothing :: Game
+    let game = mkGame (Online 0) initialBoard 1 dummyTimeLimit switch eventChan Nothing Easy :: Game
 
     -- start server or client thread
     game' <- setSockGameState game

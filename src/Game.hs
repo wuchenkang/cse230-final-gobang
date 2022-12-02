@@ -15,8 +15,9 @@ import Network.Socket ( Socket )
 import NetUtil
 import Control.Monad (when)
 
-mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> BChan GobangEvent -> Maybe Socket -> Game
-mkGame m ib p t s chan sock = Game 
+
+mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> BChan GobangEvent -> Maybe Socket -> Difficulty -> Game
+mkGame m ib p t s chan sock d = Game 
   { 
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
@@ -29,6 +30,7 @@ mkGame m ib p t s chan sock = Game
   , status = Playing
   , gchan = chan
   , msock = sock
+  , difficulty = d
   }
   where
     mkCell 0 = Empty
@@ -257,4 +259,4 @@ test2 = do
   let row1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
   let row2 = replicate 4 Empty ++ [Occ 1, Empty, Occ 2] ++ replicate 2 Empty
   let row3 = replicate 4 Empty ++ [Occ 1,  Occ 2] ++ replicate 3 Empty
-  replicate 4 all0 ++ [row1, row2, row3] ++ replicate 2 all0
+  replicate 4 all0 ++ [row2, row3, row1] ++ replicate 2 all0
