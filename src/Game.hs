@@ -34,6 +34,7 @@ data Game = Game
   , timerStatus :: TVar TimerStatus
   , mode :: Mode
   , status :: Status
+  , gchan :: BChan GobangEvent
   }
 
 data Mode = Local | AI | Online Int -- 0: host, 1: customer
@@ -41,8 +42,8 @@ data Mode = Local | AI | Online Int -- 0: host, 1: customer
 
 data Status = Playing | Win Int | Draw deriving (Eq, Show)
 
-mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> Game
-mkGame m ib p t s = Game 
+mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> BChan GobangEvent -> Game
+mkGame m ib p t s chan = Game 
   { 
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
@@ -51,8 +52,9 @@ mkGame m ib p t s = Game
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
-  , mode = m
+  , mode = AI
   , status = Playing
+  , gchan = chan
   }
   where
     mkCell 0 = Empty
@@ -170,6 +172,11 @@ afterPlacement = do
         then liftIO $ turnOnTimer game'' 
         else liftIO $ turnOffTimer game''
       put game''
+      if mode game'' == AI && player game'' == 2
+        then do
+          let (y, x) = putAI game''
+          liftIO $ writeBChan (gchan game'') (Placement (x, y))
+        else return ()
       return ()
 
 getColumnAt :: [[Cell]] -> Int -> [Cell]
@@ -195,13 +202,12 @@ getDiagonals game = [getLeftDiagonalAt (board game) i | i <- [-8..8]] ++ [getLef
 
 
 -- AI Section
-putAI :: Game -> Game
+putAI :: Game -> (Int, Int)
 putAI game = do
     let boardNow = board game
     let scores = calculateAIScore boardNow
     let (_, xs) = maximumBy (\x y -> compare (fst x) (fst y)) (zip scores [0..])
-    let (i, j) = getIJfromIndex xs
-    placePiece game i j
+    getIJfromIndex xs
 
 putAITesting :: [[Cell]] -> (Int, Int)
 putAITesting boardNow = do
@@ -271,3 +277,11 @@ test1 = do
   let center1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
   replicate 4 all0 ++ [center1] ++ replicate 4 all0
 
+
+test2 :: [[Cell]]
+test2 = do
+  let all0 = replicate 9 Empty
+  let row1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
+  let row2 = replicate 4 Empty ++ [Occ 1, Empty, Occ 2] ++ replicate 2 Empty
+  let row3 = replicate 4 Empty ++ [Occ 1,  Occ 2] ++ replicate 3 Empty
+  replicate 4 all0 ++ [row1, row2, row3] ++ replicate 2 all0

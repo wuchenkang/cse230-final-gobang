@@ -9,11 +9,6 @@ import Control.Concurrent ( forkIO )
 import Control.Concurrent.STM ( newTVarIO )
 import Control.Monad (forever)
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> origin/main
 initialBoard :: [Int]
 initialBoard = replicate (9 * 9) 0
 -- initialBoard = take (9 * 9) [0..]
@@ -34,7 +29,7 @@ main = do
     _ <- forkIO $ forever $ tictocThread switch eventChan
 
     -- TODO: game from panel
-    let game = mkGame (Online 0) initialBoard 1 dummyTimeLimit switch
+    let game = mkGame AI initialBoard 1 dummyTimeLimit switch eventChan
 
     -- start server or client thread
     case mode game of
