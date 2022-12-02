@@ -4,6 +4,8 @@ import Network.Socket ( Socket )
 import Control.Concurrent.STM ( TVar )
 import Brick.BChan ( BChan )
 
+data State = SelectMode | SelectInitiative deriving (Eq, Show)
+
 data Cell
   = Occ Int
   | Empty
@@ -36,6 +38,14 @@ data Game = Game
   , gchan :: BChan GobangEvent
   , msock :: Maybe Socket
   , difficulty :: Difficulty
+  }
+
+data Setup = Setup
+  { state :: State
+  , typ :: Int
+  , initiative :: Int
+  , diff :: Int
+  , ip :: String
   }
 
 data CursorDirection

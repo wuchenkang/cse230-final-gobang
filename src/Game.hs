@@ -16,21 +16,21 @@ import NetUtil
 import Control.Monad (when)
 
 
-mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> BChan GobangEvent -> Maybe Socket -> Difficulty -> Game
-mkGame m ib p t s chan sock d = Game 
+mkGame :: Setup -> [Int] -> Int -> TVar TimerStatus -> BChan GobangEvent -> Maybe Socket -> Game
+mkGame su ib t s chan sock = Game 
   { 
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
-  , player = p
-  , identity = p
+  , player = initiative su
+  , identity = initiative su
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
-  , mode = m
+  , mode = if typ su == 0 then Local else if typ su == 1 then AI else Online 0
   , status = Playing
   , gchan = chan
   , msock = sock
-  , difficulty = d
+  , difficulty = Easy
   }
   where
     mkCell 0 = Empty

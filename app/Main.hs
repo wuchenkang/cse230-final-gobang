@@ -20,7 +20,13 @@ dummyTimeLimit = 10
 
 main :: IO ()
 main = do
-    -- add user input to set up game
+    setup <- M.defaultMain  setupApp Setup {
+        state=SelectMode,
+        typ=0,
+        initiative=1,
+        diff=1,
+        ip="192.168.1.1"
+    }
     eventChan <- BC.newBChan dummyTimeLimit
     let buildVty = V.mkVty V.defaultConfig
     initialVty <- buildVty
@@ -30,7 +36,7 @@ main = do
     _ <- forkIO $ forever $ tictocThread switch eventChan
 
     -- TODO: game from panel
-    let game = mkGame (Online 0) initialBoard 1 dummyTimeLimit switch eventChan Nothing Easy :: Game
+    let game = mkGame setup initialBoard dummyTimeLimit switch eventChan Nothing :: Game
 
     -- start server or client thread
     game' <- setSockGameState game
