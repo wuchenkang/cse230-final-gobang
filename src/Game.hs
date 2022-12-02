@@ -173,19 +173,19 @@ getColumns :: Game -> [[Cell]]
 getColumns game = [getColumnAt (board game) i | i <- [0..8]]
 
 getDiagonals :: Game -> [[Cell]]
-getDiagonals game = [getLeftDiagonalAt (board game) i | i <- [-8..8]] ++ [getLeftDiagonalAt (board game) i | i <- [0, 16]]
-
+getDiagonals game = [getLeftDiagonalAt (board game) i | i <- [-8..8]] ++ [getRightDiagonalAt (board game) i | i <- [0..16]]
 -- AI Section
 putAI :: Game -> (Int, Int)
 putAI game = do
     let boardNow = board game
-    let scores = calculateAIScore boardNow
+    let d = difficulty game
+    let scores = calculateAIScore boardNow d
     let (_, xs) = maximumBy (\x y -> compare (fst x) (fst y)) (zip scores [0..])
     getIJfromIndex xs
 
-putAITesting :: [[Cell]] -> (Int, Int)
-putAITesting boardNow = do
-    let scores = calculateAIScore boardNow
+putAITesting :: [[Cell]] -> Difficulty -> (Int, Int)
+putAITesting boardNow d = do
+    let scores = calculateAIScore boardNow d
     let (_, xs) = maximumBy (\x y -> compare (fst x) (fst y)) (zip scores [0..])
     getIJfromIndex xs
 
@@ -197,11 +197,14 @@ getIJfromIndex k = (i, j)
         j = k `mod` 9
 
 
-calculateAIScore :: [[Cell]] -> [Int]
-calculateAIScore game = [calculateAIScoreAt game row col | row <- [0..8], col <- [0..8]]
+calculateAIScore :: [[Cell]] -> Difficulty -> [Int]
+calculateAIScore game d = 
+  case d of 
+    Easy -> [calculateAIScoreAt calculateAIScoreAtListEasy game row col | row <- [0..8], col <- [0..8]]
+    Hard -> [calculateAIScoreAt calculateAIScoreAtListHard game row col | row <- [0..8], col <- [0..8]]
 
-calculateAIScoreAt :: [[Cell]] -> Int -> Int -> Int
-calculateAIScoreAt game i j = do
+calculateAIScoreAt :: (Int -> [Cell] -> Int) -> [[Cell]] -> Int -> Int -> Int
+calculateAIScoreAt func game i j = do
     let item = game !! i !! j
     let row = getRowAt game i
     let col = getColumnAt game j
@@ -209,16 +212,22 @@ calculateAIScoreAt game i j = do
     let diagnoalRight = getRightDiagonalAt game (i + j)
     let diagnoalLeftIndex = min i j
     let tempMin = min 8 (i + j)
-    let diagnoalRightIndex = tempMin - i - 1
-    let score1 = calculateAIScoreAtList j row
-    let score2 = calculateAIScoreAtList i col
-    let score3 = calculateAIScoreAtList diagnoalLeftIndex diagnoalLeft
-    let score4 = calculateAIScoreAtList diagnoalRightIndex diagnoalRight
-    if item == Empty then score1 + score2 + score3 + score4 else 0
+    let diagnoalRightIndex = tempMin - j
+    let score1 = func j row
+    let score2 = func i col
+    let score3 = func diagnoalLeftIndex diagnoalLeft
+    let score4 = func diagnoalRightIndex diagnoalRight
+    let centerScore = (calculateCenterScore i j)
+    if item == Empty then score1 + score2 + score3 + score4 + centerScore else centerScore
 
-
-calculateAIScoreAtList :: Int -> [Cell] -> Int
-calculateAIScoreAtList k list = do
+calculateCenterScore :: Int -> Int -> Int
+calculateCenterScore i j = do
+  let diffx = min i 8-i
+  let diffy = min j 8-j
+  diffx * diffy 
+  
+calculateAIScoreAtListEasy :: Int -> [Cell] -> Int
+calculateAIScoreAtListEasy k list = do
     let leftList = reverse (take k list)
     let rightList = drop (k+1) list
     let leftConNum = calculateContinueNum leftList
@@ -227,15 +236,35 @@ calculateAIScoreAtList k list = do
     let rightFirst = getFirstEle rightList
     ((10 ^ leftConNum) * leftFirst) + ((10 ^ rightConNum) * rightFirst)
 
+calculateAIScoreAtListHard :: Int -> [Cell] -> Int
+calculateAIScoreAtListHard k list = do
+    let leftList = reverse (take k list)
+    let rightList = drop (k+1) list
+    let leftConNum = max ((calculateContinueNum leftList) - 2) 0
+    let rightConNum = max ((calculateContinueNum rightList) - 2) 0
+    let leftFirst = getFirstEle leftList
+    let rightFirst = getFirstEle rightList
+    if (leftConNum == 4 && leftFirst == 1)
+      || (rightConNum == 4 && rightFirst == 1) then
+     10 ^ 10
+    else
+        (if (leftFirst == 2 && rightFirst == 2)
+              || (leftFirst == 1 && rightFirst == 1) then
+              10 ^ ((leftConNum + 1 + rightConNum) ^ 2)
+          else
+              (10 ^ ((leftConNum ^ 2) + 2) * leftFirst)
+                + (10 ^ ((rightConNum ^ 2) + 2) * rightFirst))
+
+
 getFirstEle :: [Cell] -> Int
 getFirstEle [] = 0
 getFirstEle [x]
-    | x == Occ 0 = 2
-    | x == Occ 1 = 1
+    | x == Occ 1 = 3
+    | x == Occ 2 = 1
     | otherwise = 0
 getFirstEle (x : _)
-  | x == Occ 0 = 2
-  | x == Occ 1 = 1
+  | x == Occ 1 = 3
+  | x == Occ 2 = 1
   | otherwise = 0
 
 calculateContinueNum :: [Cell] -> Int
@@ -258,3 +287,11 @@ test2 = do
   let row2 = replicate 4 Empty ++ [Occ 1, Empty, Occ 2] ++ replicate 2 Empty
   let row3 = replicate 4 Empty ++ [Occ 1,  Occ 2] ++ replicate 3 Empty
   replicate 4 all0 ++ [row2, row3, row1] ++ replicate 2 all0
+
+test3 :: [[Cell]]
+test3 = do
+  let all0 = replicate 9 Empty
+  let row1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
+  let row2 = replicate 3 Empty ++ [Occ 1] ++ replicate 5 Empty
+  let row3 = replicate 2 Empty ++ [Occ 1] ++ replicate 6 Empty
+  replicate 5 all0 ++ [row1, row2, row3] ++ replicate 1 all0 
