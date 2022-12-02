@@ -269,8 +269,17 @@ handleEvent (AppEvent Countdown) = do
       if tictoc game > 0
         then modify $ timerUpdate $ tictoc game - 1
         else do
-          modify $ randomPlace
-          afterPlacement
+          case mode game of
+            (Online _) -> do
+              if (not $ isYourTerm game)
+                then return ()
+              else do
+                modify $ randomPlace
+                afterPlacement
+            _ -> do
+                modify $ randomPlace
+                afterPlacement
+
     -- conume dead countdown if any
     -- endgame
     _ -> return ()
