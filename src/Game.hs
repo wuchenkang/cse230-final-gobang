@@ -24,6 +24,8 @@ data GobangEvent =
 
 data TimerStatus = ON | OFF deriving (Eq, Show)
 
+data Difficulty = Easy | Hard deriving (Eq, Show)
+
 data Game = Game 
   { board :: Board
   , focusPos :: (Int, Int)
@@ -35,6 +37,7 @@ data Game = Game
   , mode :: Mode
   , status :: Status
   , gchan :: BChan GobangEvent
+  , difficulty :: Difficulty
   }
 
 data Mode = Local | AI | Online Int -- 0: host, 1: customer
@@ -42,8 +45,8 @@ data Mode = Local | AI | Online Int -- 0: host, 1: customer
 
 data Status = Playing | Win Int | Draw deriving (Eq, Show)
 
-mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> BChan GobangEvent -> Game
-mkGame m ib p t s chan = Game 
+mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> BChan GobangEvent -> Difficulty -> Game
+mkGame m ib p t s chan d = Game 
   { 
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
@@ -55,6 +58,7 @@ mkGame m ib p t s chan = Game
   , mode = AI
   , status = Playing
   , gchan = chan
+  , difficulty = d
   }
   where
     mkCell 0 = Empty
@@ -174,7 +178,7 @@ afterPlacement = do
       put game''
       if mode game'' == AI && player game'' == 2
         then do
-          let (y, x) = putAI game''
+          let (x, y) = putAI game''
           liftIO $ writeBChan (gchan game'') (Placement (x, y))
         else return ()
       return ()
@@ -284,4 +288,4 @@ test2 = do
   let row1 = replicate 4 Empty ++ [Occ 1] ++ replicate 4 Empty
   let row2 = replicate 4 Empty ++ [Occ 1, Empty, Occ 2] ++ replicate 2 Empty
   let row3 = replicate 4 Empty ++ [Occ 1,  Occ 2] ++ replicate 3 Empty
-  replicate 4 all0 ++ [row1, row2, row3] ++ replicate 2 all0
+  replicate 4 all0 ++ [row2, row3, row1] ++ replicate 2 all0

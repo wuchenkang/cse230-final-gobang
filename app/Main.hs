@@ -8,6 +8,7 @@ import qualified Graphics.Vty as V
 import Control.Concurrent ( forkIO ) 
 import Control.Concurrent.STM ( newTVarIO )
 import Control.Monad (forever)
+import Game (Difficulty(Easy, Hard))
 
 initialBoard :: [Int]
 initialBoard = replicate (9 * 9) 0
@@ -29,7 +30,7 @@ main = do
     _ <- forkIO $ forever $ tictocThread switch eventChan
 
     -- TODO: game from panel
-    let game = mkGame AI initialBoard 1 dummyTimeLimit switch eventChan
+    let game = mkGame AI initialBoard 1 dummyTimeLimit switch eventChan Hard
 
     -- start server or client thread
     case mode game of
