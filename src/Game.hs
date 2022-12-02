@@ -143,6 +143,7 @@ afterPlacement = do
           when (isYourTerm game') $ do 
               let (y, x) = putAI game'
               liftIO $ writeBChan (gchan game') (Placement (x, y))
+              liftIO $ turnOnTimer game'
         Online _ -> 
           when (isYourTerm game') $ do
             let (c, r) = focusPos game'
