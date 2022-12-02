@@ -294,7 +294,8 @@ initializeEvent = do
   if mode game == AI && player game == 2
     then do 
       let (y, x) = putAI game
-      liftIO $ writeBChan (gchan game) (Placement (x, y)) 
+      liftIO $ writeBChan (gchan game) (Placement (x, y))
+      liftIO $ turnOnTimer game
     else liftIO $ turnOnTimer game
 
 app :: App Game GobangEvent ()
