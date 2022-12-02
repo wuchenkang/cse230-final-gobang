@@ -1,5 +1,6 @@
 module FrontEnd where
 
+import Types
 import Game
 import Lens.Micro
 import Brick 
@@ -161,7 +162,7 @@ handleGameEvent _ = return ()
 -- TODO: Time out to AI / PVP
 handleEvent :: BrickEvent () GobangEvent -> EventM () Game ()
 handleEvent (AppEvent (Placement (x, y))) = do
-  modify (\g -> placePiece g x y)
+  modify (\g -> placePiece g y x)
   afterPlacement
 handleEvent (AppEvent Countdown) = do
   game <- get
