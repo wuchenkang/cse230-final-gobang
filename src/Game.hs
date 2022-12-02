@@ -56,7 +56,6 @@ isOccupied game r c = helper $ board game !! r !! c
     helper Empty = False
     helper _     = True
 
-
 placePiece :: Game -> Int -> Int -> Game
 placePiece game row col = game { board = board game & ix row . ix col .~ p }
   where

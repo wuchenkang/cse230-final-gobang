@@ -18,6 +18,7 @@ import qualified Graphics.Vty as V
 import Control.Concurrent.STM
 import Control.Monad.Trans (liftIO)
 import Brick.BChan ( writeBChan, BChan )
+import Control.Monad (when)
 
 title :: String
 title = "\n\
@@ -246,12 +247,14 @@ handleGameEvent (VtyEvent (V.EvKey k [])) = do
   
     V.KEnter -> do
       game <- get
-      if mode game /= Local && (not $ isYourTerm game)
-        then return ()
-        else do
-          liftIO $ turnOffTimer game
-          modify placeFocus
-          afterPlacement
+      let (x, y) = focusPos game
+      when (board game !! y !! x == Empty) $ do
+        if mode game /= Local && (not $ isYourTerm game)
+          then return ()
+          else do
+            liftIO $ turnOffTimer game
+            modify placeFocus
+            afterPlacement
     V.KChar 'q' -> M.halt
     _ -> return ()
 handleGameEvent _ = return ()
