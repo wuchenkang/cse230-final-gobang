@@ -33,6 +33,9 @@ dependencies:
 - vector
 - split
 - stm
+- network
+- bytestring
+- binary
 
 ghc-options:
 - -Wall

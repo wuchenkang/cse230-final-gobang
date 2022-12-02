@@ -1,13 +1,13 @@
 module Main where
 import Game 
 import FrontEnd
+import NetUtil
 import qualified Brick.Main as M
 import qualified Brick.BChan as BC
 import qualified Graphics.Vty as V
-import Control.Concurrent 
-import Control.Concurrent.STM
+import Control.Concurrent ( forkIO ) 
+import Control.Concurrent.STM ( newTVarIO )
 import Control.Monad (forever)
-
 
 initialBoard :: [Int]
 initialBoard = replicate (9 * 9) 0
@@ -24,8 +24,28 @@ main = do
     let buildVty = V.mkVty V.defaultConfig
     initialVty <- buildVty
     switch <- newTVarIO OFF
-    forkIO $ forever $ tictocThread switch eventChan
-    let game = mkGame initialBoard 1 dummyTimeLimit switch
+
+    -- add timer thread
+    _ <- forkIO $ forever $ tictocThread switch eventChan
+
+    -- TODO: game from panel
+    let game = mkGame (Online 0) initialBoard 1 dummyTimeLimit switch
+
+    -- start server or client thread
+    case mode game of
+        Local      -> putStrLn "Playing local pvp"
+        AI         -> putStrLn "Playing with AI"
+        (Online 0) -> do
+            putStrLn "Starting server ..."
+            sock <- createRoom
+            _ <- forkIO $ forever $ waitForPlacement sock eventChan
+            return ()
+        (Online 1) -> do
+            putStrLn "Joining game ..."
+            sock <- joinGame
+            return ()
+        _ -> return ()
+
     gameOver <- M.customMain initialVty buildVty 
                     (Just eventChan) app game
     -- gameOver <- M.defaultMain app game

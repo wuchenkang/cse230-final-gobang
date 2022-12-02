@@ -2,11 +2,12 @@ module Game where
 
 import Data.List (isInfixOf)
 import Data.List.Split (chunksOf)
-import Lens.Micro
-import Brick
-import Brick.BChan
-import Control.Concurrent 
+import Lens.Micro ( (&), (.~), ix )
+import Brick ( modify, EventM, put, get )
+import Brick.BChan ( writeBChan, BChan )
+import Control.Concurrent ( threadDelay ) 
 import Control.Concurrent.STM
+    ( atomically, readTVarIO, writeTVar, TVar )
 import Control.Monad.Trans (liftIO)
 
 data Cell
@@ -26,6 +27,7 @@ data Game = Game
   { board :: Board
   , focusPos :: (Int, Int)
   , player :: Int -- 1 P1, (P2, AI)
+  , identity :: Int -- 1 P1, (P2, AI), will never change
   , tictoc :: Int -- TODO: timer
   , timeLimit :: Int
   , timerStatus :: TVar TimerStatus
@@ -33,24 +35,29 @@ data Game = Game
   , status :: Status
   }
 
-data Mode = Local | AI deriving (Eq, Show)
+data Mode = Local | AI | Online Int -- 0: host, 1: customer
+  deriving (Eq, Show)
+
 data Status = Playing | Win Int | Draw deriving (Eq, Show)
 
-mkGame :: [Int] -> Int -> Int -> TVar TimerStatus -> Game
-mkGame ib p t s = Game 
+mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> Game
+mkGame m ib p t s = Game 
   { 
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
   , player = p
+  , identity = p
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
-  , mode = Local
+  , mode = m
   , status = Playing
   }
   where
     mkCell 0 = Empty
     mkCell i = Occ i
+  
+
 
 data CursorDirection
   = North
@@ -158,13 +165,9 @@ afterPlacement = do
       let game' = switchPlayer game
       -- reset and turn on/off timer
       let game'' = timerUpdate (timeLimit game) game'
-      if player game'' == 2
-        then do 
-          liftIO $ turnOffTimer game''
-          put game''
-          -- AI invoke
-          return ()
-        else liftIO $ turnOnTimer game''
+      if mode game'' == Local
+        then liftIO $ turnOnTimer game'' 
+        else liftIO $ turnOffTimer game''
       put game''
       return ()
 
