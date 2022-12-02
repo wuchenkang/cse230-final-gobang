@@ -220,10 +220,7 @@ calculateAIScoreAt func game i j = do
     if item == Empty then score1 + score2 + score3 + score4 + centerScore else centerScore
 
 calculateCenterScore :: Int -> Int -> Int
-calculateCenterScore i j = do
-  let diffx = min i 8-i
-  let diffy = min j 8-j
-  diffx * diffy 
+calculateCenterScore i j = (min i (8-i)) * (min j (8-j))
   
 calculateAIScoreAtListEasy :: Int -> [Cell] -> Int
 calculateAIScoreAtListEasy k list = do
@@ -294,3 +291,8 @@ test3 = do
   let row2 = replicate 3 Empty ++ [Occ 1] ++ replicate 5 Empty
   let row3 = replicate 2 Empty ++ [Occ 1] ++ replicate 6 Empty
   replicate 5 all0 ++ [row1, row2, row3] ++ replicate 1 all0 
+
+test4 :: [[Cell]]
+test4 = do
+  let all0 = replicate 9 Empty
+  replicate 9 all0 
