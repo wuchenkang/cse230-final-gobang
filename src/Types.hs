@@ -4,7 +4,8 @@ import Network.Socket ( Socket )
 import Control.Concurrent.STM ( TVar )
 import Brick.BChan ( BChan )
 
-data State = SelectMode | SelectInitiative deriving (Eq, Show)
+data State = SelectMode | SelectInitiative | SelectDiff
+  deriving (Eq, Show)
 
 data Cell
   = Occ Int
@@ -46,6 +47,7 @@ data Setup = Setup
   , initiative :: Int
   , diff :: Int
   , ip :: String
+  , iden :: Int
   }
 
 data CursorDirection

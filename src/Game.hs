@@ -22,15 +22,15 @@ mkGame su ib t s chan sock = Game
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
   , player = initiative su
-  , identity = initiative su
+  , identity = iden su
   , tictoc = t
   , timeLimit = t
   , timerStatus = s
-  , mode = if typ su == 0 then Local else if typ su == 1 then AI else Online 0
+  , mode = if typ su == 0 then Local else if typ su == 1 then AI else Online (iden su - 1)
   , status = Playing
   , gchan = chan
   , msock = sock
-  , difficulty = Easy
+  , difficulty = if diff su == 1 then Easy else Hard
   }
   where
     mkCell 0 = Empty
@@ -175,7 +175,6 @@ getColumns game = [getColumnAt (board game) i | i <- [0..8]]
 getDiagonals :: Game -> [[Cell]]
 getDiagonals game = [getLeftDiagonalAt (board game) i | i <- [-8..8]] ++ [getLeftDiagonalAt (board game) i | i <- [0, 16]]
 
-
 -- AI Section
 putAI :: Game -> (Int, Int)
 putAI game = do
@@ -189,7 +188,6 @@ putAITesting boardNow = do
     let scores = calculateAIScore boardNow
     let (_, xs) = maximumBy (\x y -> compare (fst x) (fst y)) (zip scores [0..])
     getIJfromIndex xs
-    
 
 
 getIJfromIndex :: Int -> (Int, Int)

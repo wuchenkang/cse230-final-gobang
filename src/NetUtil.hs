@@ -95,5 +95,6 @@ setSockGameState game = do
             putStrLn "Joining game ..."
             sock <- joinGame
             let game' = game { msock = Just sock }
+            _ <- forkIO $ forever $ waitForPlacement sock $ gchan game
             return game'
         _ -> return game

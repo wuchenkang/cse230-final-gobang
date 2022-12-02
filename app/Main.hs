@@ -25,7 +25,8 @@ main = do
         typ=0,
         initiative=1,
         diff=1,
-        ip="192.168.1.1"
+        ip="127.0.0.1",
+        iden=1
     }
     eventChan <- BC.newBChan dummyTimeLimit
     let buildVty = V.mkVty V.defaultConfig
