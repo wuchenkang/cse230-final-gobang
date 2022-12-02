@@ -54,7 +54,6 @@ waitForPlacement :: Socket -> BChan GobangEvent  -> IO ()
 waitForPlacement sock chan = do
     msg <- recv sock 1024
     let p@(Position c r) = decode $ fromStrict msg :: Payload
-    print p
     writeBChan chan $ Placement (c, r)
     return ()
 

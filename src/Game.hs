@@ -10,6 +10,7 @@ import Control.Concurrent.STM
     ( atomically, readTVarIO, writeTVar, TVar )
 import Control.Monad.Trans (liftIO)
 import Data.List ( maximumBy )
+import Network.Socket ( Socket )
 
 data Cell
   = Occ Int
@@ -34,6 +35,7 @@ data Game = Game
   , timerStatus :: TVar TimerStatus
   , mode :: Mode
   , status :: Status
+  , sock :: Maybe Socket
   }
 
 data Mode = Local | AI | Online Int -- 0: host, 1: customer
@@ -41,8 +43,8 @@ data Mode = Local | AI | Online Int -- 0: host, 1: customer
 
 data Status = Playing | Win Int | Draw deriving (Eq, Show)
 
-mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> Game
-mkGame m ib p t s = Game 
+mkGame :: Mode -> [Int] -> Int -> Int -> TVar TimerStatus -> Maybe Socket -> Game
+mkGame m ib p t s sock = Game 
   { 
     board = chunksOf 9 $ mkCell <$> ib
   , focusPos = (4, 4)
@@ -53,6 +55,7 @@ mkGame m ib p t s = Game
   , timerStatus = s
   , mode = m
   , status = Playing
+  , sock = sock
   }
   where
     mkCell 0 = Empty
