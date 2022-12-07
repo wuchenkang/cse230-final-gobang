@@ -20,8 +20,6 @@ With a simple rule and much competitiveness, gobang is easy to play but not easy
 - **Game Initialization**: Users could create games with an empty 9 * 9 board. 
   - Game Mode: The users can choose one of the three options: 1. Players vs Players locally 2. Players vs AI locally 3. Players vs Players online
   - First Move: The users can choose which user to play first
-  - Time limit: The users can choose the amount of time for the time limitation
-  - Time limit: The users can choose the amount of time for the time limitation
   - Difficulty level (easy/hard): The users can choose the difficulty level for the AI
 
 - **Displaying Board**: Players are able to see the current chess board at any time. This displaying features will show all placed pieces and also all empty spots.
