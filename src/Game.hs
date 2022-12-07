@@ -66,7 +66,7 @@ placeFocus game = placePiece game y x
   where (x, y) = focusPos game
 
 randomPlace :: Game -> Game
-randomPlace game = game { board = board game & ix y . ix x .~ p }
+randomPlace game = game { board = board game & ix y . ix x .~ p, focusPos = (x, y) }
   where
     (y, x) = head candidates
     candidates = [(row, col) | row <- [0 .. 8], 
@@ -138,19 +138,20 @@ afterPlacement = do
       put game'
       -- change stage
       case mode game' of
-        Local -> liftIO $ turnOnTimer game'
+        Local -> return ()
         AI -> do
           when (isYourTerm game') $ do 
               let (y, x) = putAI game'
               liftIO $ writeBChan (gchan game') (Placement (x, y))
-              liftIO $ turnOnTimer game'
-        Online _ -> 
+              -- liftIO $ turnOnTimer game'
+        Online _ ->
           when (isYourTerm game') $ do
             let (c, r) = focusPos game'
             let ms = msock game'
             case ms of
               Nothing -> return ()
               (Just sock) -> liftIO $ sendPlacement c r sock
+      liftIO $ turnOnTimer game'
       modify switchPlayer
       return ()
 

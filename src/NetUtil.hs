@@ -30,7 +30,7 @@ instance Binary Payload where
 joinGame :: IO Socket
 joinGame = do
     let hints = defaultHints { addrSocketType = Stream }
-    addr <- head <$> getAddrInfo (Just hints) (Just "127.0.0.1") (Just "2333")
+    addr <- head <$> getAddrInfo (Just hints) (Just "127.0.0.1") (Just "23334")
     skt <- openSocket addr 
     connect skt $ addrAddress addr
     return skt
@@ -38,7 +38,7 @@ joinGame = do
 createRoom :: IO Socket
 createRoom = do
     let hints = defaultHints { addrSocketType = Stream, addrFlags = [AI_PASSIVE] }
-    addr <- head <$> getAddrInfo (Just hints) (Just "127.0.0.1") (Just "2333")
+    addr <- head <$> getAddrInfo (Just hints) (Just "127.0.0.1") (Just "23334")
     skt <- openSocket addr
     setSocketOption skt ReuseAddr 1
     withFdSocket skt setCloseOnExecIfNeeded

@@ -10,23 +10,27 @@ This project is a terminal interface of the gobang game implemented in Haskell u
 
 #### Rules
 
-Gobang, also called Gomoku, is a 2-player abstract strategy board game. Gobang is played on a 15 by 15 chess board. Two players use black and white chess pieces respectively, place a piece of their own color on an empty intersection in terns. The first player to form a continuous chain of five chess pieces horizontally, vertically, or diagonally wins the game.
+Gobang, also called Gomoku, is a 2-player abstract strategy board game. Gobang is played on a 9 by 9 chessboard. Two players use black and white chess pieces respectively, alternately placing a piece of their own color on an empty intersection. Black plays first. The first player to form a continuous chain of five chess pieces horizontally, vertically, or diagonally wins the game.
 With a simple rule and much competitiveness, gobang is easy to play but not easy to play well, which brings players much fun. While trying to form their own continuous chain, players also need to pay attention to the opponent’s behaviors to prevent the opponent from forming the chain first.
+
 
 
 #### Feartures
 
-- **Game Initialization**: Users could create games with an empty 15 * 15 board. They could also specify the difficulty level (local battle mode), time limit to decide the placement, and whether players are allowed to withdraw their move. If it's an online game, the side (Black/While) for each player is assigned randomly. The black side always place the first piece.
+- **Game Initialization**: Users could create games with an empty 9 * 9 board. 
+  - Game Mode: The users can choose one of the three options: 1. Players vs Players locally 2. Players vs AI locally 3. Players vs Players online
+  - First Move: The users can choose which user to play first
+  - Difficulty level (easy/hard): The users can choose the difficulty level for the AI
 
-- **Displaying Board**: Players are able to see the current chess board at anytime. This displaying features will show all placed pieces and also all empty spots. 
+- **Displaying Board**: Players are able to see the current chess board at any time. This displaying features will show all placed pieces and also all empty spots.
 
-- **Action**: In each players’ turn, players can put a piece at any empty spot. A move must be made within the time limits, otherwise the piece will be placed at a randomly selected spot. If the time limit for the whole game is used up, players will get 5 seconds for every move.
+- **Action**: In each players’ turn, players can put a piece at any empty spot. A move must be made within the time limits, otherwise, the piece will be placed at a randomly selected spot.
 
-- **Withdraw**: Players can withdraw their last move before the opponents taking action. This is only allowed when “allow_withdraw” is turned on as mentioned in game initialization.
+- **GameEnd**: After each move, the system will automatically detect whether the game is ended and display the results if so
 
-- **Time Limit**: Users can set time limits for a single move and the whole game. In the local mode against AI, this restriction will only apply to the human player. If it's a PVP battle, the `White` player will set this for the current game. 
+- **Timer**: The system provide a countdown timer for each player’s move. It will automatically refresh after each move. 
 
-- **Difficulty Level**:  Users could choose different AI difficulty levels, on which the search depth of a Game Tree is based. This feature is only available in local battles. And the time it takes for a search is not restricted by the `time_limit` setting. So, play easy on yourself.
+- **Difficulty Level**:  Users could choose different AI difficulty levels. There are two difficulty levels in total: Easy and Hard. 
 
 - **Online Battles**: Users can play games online with other players.
 
@@ -34,7 +38,8 @@ With a simple rule and much competitiveness, gobang is easy to play but not easy
 ### Timeline
 
 - 11.9 Proposal Submission
-- TBD
+- 12.6 Finish
+- 12.7 Presentation
 
 ### Reference
 
