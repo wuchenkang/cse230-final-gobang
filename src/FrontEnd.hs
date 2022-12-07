@@ -264,6 +264,8 @@ handleEvent :: BrickEvent () GobangEvent -> EventM () Game ()
 handleEvent (AppEvent (Placement (x, y))) = do
   modify (\g -> placePiece g y x)
   afterPlacement
+  game <- get
+  liftIO $ turnOnTimer game
 handleEvent (AppEvent Countdown) = do
   game <- get
   s <- liftIO $ readTVarIO $ timerStatus game
