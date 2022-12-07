@@ -53,7 +53,7 @@ library
     , vty
   default-language: Haskell2010
 
-executable gobang-exe
+executable gobang
   main-is: Main.hs
   other-modules:
       Paths_gobang
@@ -75,6 +75,40 @@ executable gobang-exe
     , network
     , split
     , stm
+    , text
+    , vector
+    , vty
+  default-language: Haskell2010
+
+test-suite unit
+  type: exitcode-stdio-1.0
+  main-is: Test.hs
+  other-modules:
+      Common
+      Paths_gobang
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck
+    , base >=4.7 && <5
+    , binary
+    , brick
+    , bytestring
+    , filepath
+    , gobang
+    , lens
+    , microlens
+    , microlens-mtl
+    , microlens-platform
+    , microlens-th
+    , mtl
+    , network
+    , process
+    , split
+    , stm
+    , tasty
+    , tasty-hunit
     , text
     , vector
     , vty
