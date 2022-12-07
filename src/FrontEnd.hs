@@ -144,13 +144,12 @@ drawCell c = center $ case c of
   Occ 1 -> withAttr stylePlayer1 $ str "⬤" 
   Occ 2 -> withAttr stylePlayer2 $ str "⬤" 
   Empty -> str " "
-  _     -> str "wtf"
+  _     -> str ""
 
 drawRow :: Row -> Widget ()
 drawRow r = vBox $ fmap drawCell r
 
 drawBoard :: Game -> Widget ()
--- drawBoard b = hBox $ fmap drawRow b
 drawBoard game = 
   fmap (fmap drawCell) (board game)
   & focusPosition game
@@ -220,15 +219,15 @@ drawWinner _ _ = str "impossible to happen"
 drawDraw :: Widget ()
 drawDraw = str "Draw"
 
-drawNormal :: Game -> Widget ()
-drawNormal game = (drawBoard game & withAttr styleChessBoard) 
+drawPlaying :: Game -> Widget ()
+drawPlaying game = (drawBoard game & withAttr styleChessBoard) 
                          <+> ( drawHelp
                          <=>   drawTimer game
                          <=>   drawTerm game
                              )
 
 drawUI :: Game -> [Widget ()]
-drawUI g@Game{status=Playing} = [drawNormal g]
+drawUI g@Game{status=Playing} = [drawPlaying g]
 drawUI Game{status=Draw}      = [drawDraw]
 drawUI g@Game{status=Win _}   = [drawWinner g $ status g]
 

@@ -29,16 +29,16 @@ data Difficulty = Easy | Hard deriving (Eq, Show)
 data Game = Game 
   { board :: Board
   , focusPos :: (Int, Int)
-  , player :: Int -- 1 P1, (P2, AI)
-  , identity :: Int -- 1 P1, (P2, AI), will never change
-  , tictoc :: Int -- TODO: timer
+  , player :: Int -- Current player
+  , identity :: Int -- 0: host, 1: client
+  , tictoc :: Int
   , timeLimit :: Int
   , timerStatus :: TVar TimerStatus
   , mode :: Mode
   , status :: Status
   , gchan :: BChan GobangEvent
-  , msock :: Maybe Socket
-  , difficulty :: Difficulty
+  , msock :: Maybe Socket -- Only used in online mode
+  , difficulty :: Difficulty -- Only used in AI mode
   }
 
 data Setup = Setup
