@@ -298,3 +298,4 @@ test4 :: [[Cell]]
 test4 = do
   let all0 = replicate 9 Empty
   replicate 9 all0 
+
